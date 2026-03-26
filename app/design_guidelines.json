@@ -1,0 +1,94 @@
+{
+  "theme": "light",
+  "archetype": "1 (Organic & Earthy)",
+  "vibe": "Grounded, tactile, distraction-free, paper-like.",
+  "typography": {
+    "heading_font": "Outfit",
+    "body_font": "IBM Plex Sans",
+    "mono_font": "JetBrains Mono",
+    "rules": {
+      "headings": "Use tracking-tight for H1/H2. font-medium or font-semibold, avoid overly bold. Never use Inter for headings.",
+      "body": "leading-relaxed for comfortable reading.",
+      "code": "text-sm, leading-relaxed, with a slightly darker background for contrast."
+    }
+  },
+  "colors": {
+    "background": {
+      "app": "#F4F0EB",
+      "sidebar": "#F4F0EB",
+      "editor": "#FFFFFF"
+    },
+    "text": {
+      "primary": "#1C1917",
+      "secondary": "#78716C",
+      "muted": "#A8A29E"
+    },
+    "accents": {
+      "primary": "#E06A4F",
+      "primary_hover": "#C95A41",
+      "selection": "rgba(224, 106, 79, 0.2)"
+    },
+    "borders": {
+      "default": "#E7E5E4",
+      "focus": "#E06A4F"
+    }
+  },
+  "spacing_and_layout": {
+    "app_structure": "Full height (100vh) split-pane layout. Sidebar fixed on left (hidden on mobile via drawer), Editor takes remaining width.",
+    "sidebar": "w-64 or w-72 flex-shrink-0. Generous p-4 padding for items.",
+    "editor": "Max width constraint (e.g. max-w-3xl) centered in the editor pane for optimal reading length. p-8 or p-12.",
+    "bento_grid": "Not applicable for the main editor, but grid-cols-1 md:grid-cols-2 lg:grid-cols-3 can be used for 'All Notes' card view."
+  },
+  "surface_strategies": {
+    "sidebar_items": "Flat background, rounded-md, hover:bg-white/50 transition-colors.",
+    "note_cards": "Flat background (#FFFFFF), 1px solid border (#E7E5E4), subtle hover shadow (shadow-sm), slightly rounded (rounded-lg).",
+    "editor_canvas": "Pure white, borderless, clean. No distractions."
+  },
+  "components": {
+    "forms_and_inputs": "Use Shadcn customized. Avoid standard heavy borders; use subtle underlines or highly rounded soft borders.",
+    "buttons": "Rounded-full or rounded-lg. Primary CTA uses Terracotta background with white text.",
+    "rich_text_editor": "Tailwind prose customized. No visible toolbar unless highlighting text (floating menu), or a very minimal sticky header toolbar.",
+    "syntax_highlighting": "Dark theme code blocks inside the light editor for high contrast, or a very soft gray (stone-100) background with dark syntax."
+  },
+  "interactions_and_motion": {
+    "hover": "Subtle background shifts (stone-100) and -translate-y-1 on note cards.",
+    "transitions": "Use 'transition-all duration-200 ease-out'.",
+    "focus": "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#E06A4F]."
+  },
+  "icons": {
+    "library": "lucide-react",
+    "style": "stroke-width 1.5 for a clean, elegant look."
+  },
+  "media": {
+    "images": [
+      {
+        "category": "login_background",
+        "url": "https://images.unsplash.com/photo-1670893494981-cd78dcf87cf4?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2OTV8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMHNvZnQlMjBwYXBlciUyMHRleHR1cmUlMjBsaWdodHxlbnwwfHx8fDE3NzQ1MzY1NDJ8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Close up of a white cloth/paper texture to give an organic, warm backdrop for the login screen."
+      },
+      {
+        "category": "empty_state",
+        "url": "https://images.unsplash.com/photo-1759296844873-e0c694c24284?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2MzR8MHwxfHNlYXJjaHwzfHxtaW5pbWFsaXN0JTIwY2xlYW4lMjBkZXNrJTIwd29ya3NwYWNlJTIwYnJpZ2h0fGVufDB8fHx8MTc3NDUzNjU0MXww&ixlib=rb-4.1.0&q=85",
+        "description": "Notebook with pen and smartphone on a wooden table. Used as a visual element when a folder has no notes."
+      }
+    ],
+    "rules": "Overlay login image with bg-white/70 backdrop-blur-md for legibility."
+  },
+  "accessibility_and_testing": {
+    "contrast": "Ensure all text against the #F4F0EB background passes APCA standards. Use #1C1917 for primary text.",
+    "testing_attributes": "All interactive elements MUST include data-testid (e.g., data-testid='new-note-button')."
+  },
+  "instructions_to_main_agent": [
+    "Use Tailwind CSS for all styling.",
+    "Use standard semantic HTML5 elements.",
+    "Ensure the Google Auth login page has a beautiful centered card over the 'login_background' image with glassmorphism (bg-white/70 backdrop-blur-xl).",
+    "The main app should be a full-screen layout (100vh) with a sidebar and main editor area.",
+    "Rich text editor should use a library like TipTap or equivalent, styled cleanly with Tailwind Typography (@tailwindcss/typography).",
+    "Implement code syntax highlighting within the editor using a library like highlight.js or prismjs.",
+    "Folders and search are in the sidebar.",
+    "Use React Router for navigation if needed, or manage state for selected notes.",
+    "Connect to Firebase Firestore for real-time sync.",
+    "Add 'Outfit' and 'IBM Plex Sans' to index.html via Google Fonts."
+  ]
+}
+

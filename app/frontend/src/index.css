@@ -1,0 +1,254 @@
+
+Action: file_editor create /app/frontend/src/index.css --file-text "@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+body {
+    margin: 0;
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.font-heading {
+    font-family: 'Outfit', sans-serif;
+}
+
+.font-body {
+    font-family: 'IBM Plex Sans', sans-serif;
+}
+
+.font-mono {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+code {
+    font-family: 'JetBrains Mono', source-code-pro, Menlo, Monaco, Consolas, monospace;
+}
+
+@layer base {
+    :root {
+        --background: 36 27% 94%; /* #F4F0EB */
+        --foreground: 20 14% 9%; /* #1C1917 */
+        --card: 0 0% 100%;
+        --card-foreground: 20 14% 9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 20 14% 9%;
+        --primary: 11 68% 59%; /* #E06A4F */
+        --primary-foreground: 0 0% 100%;
+        --secondary: 30 5% 96%;
+        --secondary-foreground: 20 14% 9%;
+        --muted: 30 5% 96%;
+        --muted-foreground: 30 6% 46%; /* #78716C */
+        --accent: 30 5% 96%;
+        --accent-foreground: 20 14% 9%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 30 6% 90%; /* #E7E5E4 */
+        --input: 30 6% 90%;
+        --ring: 11 68% 59%; /* #E06A4F */
+        --radius: 0.5rem;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+}
+
+/* Prose customization for TipTap */
+.prose {
+    max-width: none;
+}
+
+.prose h1 {
+    @apply font-heading text-3xl font-semibold text-[#1C1917] tracking-tight mt-8 mb-4;
+}
+
+.prose h2 {
+    @apply font-heading text-2xl font-semibold text-[#1C1917] tracking-tight mt-6 mb-3;
+}
+
+.prose h3 {
+    @apply font-heading text-xl font-medium text-[#1C1917] tracking-tight mt-4 mb-2;
+}
+
+.prose p {
+    @apply font-body text-[#1C1917] leading-relaxed mb-4;
+}
+
+.prose ul,
+.prose ol {
+    @apply font-body text-[#1C1917] leading-relaxed mb-4 pl-6;
+}
+
+.prose li {
+    @apply mb-1;
+}
+
+.prose blockquote {
+    @apply border-l-4 border-[#E06A4F] pl-4 italic text-[#78716C] my-4;
+}
+
+.prose a {
+    @apply text-[#E06A4F] underline;
+}
+
+.prose mark {
+    @apply bg-yellow-200 px-1 rounded;
+}
+
+.prose code:not(pre code) {
+    @apply bg-[#F4F0EB] px-1.5 py-0.5 rounded text-sm font-mono text-[#1C1917];
+}
+
+/* Code block with syntax highlighting */
+.prose pre {
+    @apply bg-[#1C1917] rounded-lg p-4 my-4 overflow-x-auto;
+}
+
+.prose pre code {
+    @apply text-sm font-mono leading-relaxed;
+    color: #e4e4e7;
+}
+
+/* Syntax highlighting colors */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in,
+.hljs-name,
+.hljs-tag {
+    color: #f472b6; /* pink */
+}
+
+.hljs-string,
+.hljs-title,
+.hljs-section,
+.hljs-attribute,
+.hljs-literal,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-addition {
+    color: #a5f3fc; /* cyan */
+}
+
+.hljs-deletion,
+.hljs-selector-attr,
+.hljs-selector-pseudo,
+.hljs-meta {
+    color: #fca5a5; /* red */
+}
+
+.hljs-doctag {
+    color: #a5f3fc;
+}
+
+.hljs-attr {
+    color: #fde047; /* yellow */
+}
+
+.hljs-variable,
+.hljs-template-variable {
+    color: #f472b6;
+}
+
+.hljs-function,
+.hljs-title.function_ {
+    color: #93c5fd; /* blue */
+}
+
+.hljs-comment {
+    color: #71717a; /* gray */
+    font-style: italic;
+}
+
+.hljs-quote {
+    color: #71717a;
+    font-style: italic;
+}
+
+.hljs-number,
+.hljs-regexp,
+.hljs-literal,
+.hljs-bullet,
+.hljs-link {
+    color: #fde047; /* yellow */
+}
+
+/* TipTap placeholder */
+.ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: #A8A29E;
+    pointer-events: none;
+    height: 0;
+}
+
+/* Selection color */
+::selection {
+    background: rgba(224, 106, 79, 0.2);
+}
+
+/* Scrollbar customization */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #E7E5E4;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #D6D3D1;
+}
+
+/* Focus styles */
+*:focus-visible {
+    outline: 2px solid #E06A4F;
+    outline-offset: 2px;
+}
+
+/* Transitions */
+button,
+a,
+input,
+textarea {
+    transition: all 0.2s ease-out;
+}
+
+/* Debug wrapper for emergentbase */
+@layer base {
+    [data-debug-wrapper=\"true\"] {
+        display: contents !important;
+    }
+
+    [data-debug-wrapper=\"true\"] > * {
+        margin-left: inherit;
+        margin-right: inherit;
+        margin-top: inherit;
+        margin-bottom: inherit;
+        padding-left: inherit;
+        padding-right: inherit;
+        padding-top: inherit;
+        padding-bottom: inherit;
+        column-gap: inherit;
+        row-gap: inherit;
+        gap: inherit;
+    }
+}
+"
+Observation: Overwrite successful: /app/frontend/src/index.css
