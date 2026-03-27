@@ -296,7 +296,7 @@ const NoteEditor = ({ note, folders, onUpdate, onDelete, onShare }) => {
             ) : lastSaved ? (
               `Saved ${lastSaved.toLocaleTimeString()}`
             ) : (
-              "
+              ""
             )}
           </span>
 
@@ -371,5 +371,3 @@ const NoteEditor = ({ note, folders, onUpdate, onDelete, onShare }) => {
 };
 
 export default NoteEditor;
-
-Observation: Create successful: /app/frontend/src/components/NoteEditor.js
