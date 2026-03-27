@@ -23,7 +23,15 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # Firebase Admin SDK initialization
-cred = credentials.Certificate(ROOT_DIR / 'firebase-admin.json')
+firebase_admin_json = os.environ.get('FIREBASE_ADMIN_JSON')
+if firebase_admin_json:
+    # Use environment variable (Vercel deployment)
+    import json
+    firebase_config = json.loads(firebase_admin_json)
+    cred = credentials.Certificate(firebase_config)
+else:
+    # Use file (local development)
+    cred = credentials.Certificate(ROOT_DIR / 'firebase-admin.json')
 firebase_app = firebase_admin.initialize_app(cred)
 firestore_db = firestore.client()
 
