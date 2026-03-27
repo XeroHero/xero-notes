@@ -136,7 +136,7 @@ const Dashboard = ({ firestoreDb }) => {
     try {
       const response = await fetch(`${API}/notes/${noteId}`, {
         method: "DELETE",
-        credentials: "include
+        credentials: "include"
       });
 
       if (!response.ok) throw new Error("Failed to delete note");
@@ -156,7 +156,7 @@ const Dashboard = ({ firestoreDb }) => {
     try {
       const response = await fetch(`${API}/notes/${noteId}/share`, {
         method: "POST",
-        credentials: "include
+        credentials: "include"
       });
 
       if (!response.ok) throw new Error("Failed to share note");
@@ -195,7 +195,7 @@ const Dashboard = ({ firestoreDb }) => {
     try {
       const response = await fetch(`${API}/folders/${folderId}`, {
         method: "DELETE",
-        credentials: "include
+        credentials: "include"
       });
 
       if (!response.ok) throw new Error("Failed to delete folder");
@@ -286,10 +286,10 @@ const Dashboard = ({ firestoreDb }) => {
         </h1>
 
         <Button
-          variant="ghost
-          size="icon
+          variant="ghost"
+          size="icon"
           onClick={handleCreateNote}
-          data-testid="mobile-new-note-button
+          data-testid="mobile-new-note-button"
         >
           <Plus className="h-5 w-5 text-[#E06A4F]" />
         </Button>
@@ -309,9 +309,9 @@ const Dashboard = ({ firestoreDb }) => {
           <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center max-w-md">
               <img
-                src="https://images.unsplash.com/photo-1759296844873-e0c694c24284?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2MzR8MHwxfHNlYXJjaHwzfHxtaW5pbWFsaXN0JTIwY2xlYW4lMjBkZXNrJTIwd29ya3NwYWNlJTIwYnJpZ2h0fGVufDB8fHx8MTc3NDUzNjU0MXww&ixlib=rb-4.1.0&q=85
-                alt="Empty state
-                className="w-48 h-48 object-cover rounded-2xl mx-auto mb-6 opacity-80
+                src="https://images.unsplash.com/photo-1759296844873-e0c694c24284?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2MzR8MHwxfHNlYXJjaHwzfHxtaW5pbWFsaXN0JTIwY2xlYW4lMjBkZXNrJTIwd29ya3NwYWNlJTIwYnJpZ2h0fGVufDB8fHx8MTc3NDUzNjU0MXww&ixlib=rb-4.1.0&q=85"
+                alt="Empty state"
+                className="w-48 h-48 object-cover rounded-2xl mx-auto mb-6 opacity-80"
               />
               <h2 className="font-heading text-2xl font-semibold text-[#1C1917] mb-2">
                 No note selected
@@ -321,8 +321,8 @@ const Dashboard = ({ firestoreDb }) => {
               </p>
               <Button
                 onClick={handleCreateNote}
-                className="bg-[#E06A4F] hover:bg-[#C95A41] text-white rounded-full px-6
-                data-testid="create-first-note-button
+                className="bg-[#E06A4F] hover:bg-[#C95A41] text-white rounded-full px-6"
+                data-testid="create-first-note-button"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Create your first note
@@ -336,5 +336,3 @@ const Dashboard = ({ firestoreDb }) => {
 };
 
 export default Dashboard;
-
-Observation: Create successful: /app/frontend/src/pages/Dashboard.js

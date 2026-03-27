@@ -107,12 +107,12 @@ const SharedNotePage = () => {
             Last updated {new Date(note.updated_at).toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
-              day: "numeric
+              day: "numeric"
             })}
           </div>
 
           <div
-            className="prose prose-stone max-w-none font-body leading-relaxed
+            className="prose prose-stone max-w-none font-body leading-relaxed"
             dangerouslySetInnerHTML={{ __html: note.content }}
           />
         </article>
@@ -129,5 +129,3 @@ const SharedNotePage = () => {
 };
 
 export default SharedNotePage;
-
-Observation: Create successful: /app/frontend/src/pages/SharedNotePage.js
