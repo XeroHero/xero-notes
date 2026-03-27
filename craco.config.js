@@ -10,9 +10,6 @@ module.exports = {
     },
   },
   webpack: {
-    alias: {
-      '@': path.resolve(__dirname, 'src'),
-    },
     configure: (webpackConfig) => {
       // Add path resolution for @ alias
       webpackConfig.resolve.alias = {
