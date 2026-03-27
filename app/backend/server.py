@@ -146,60 +146,61 @@ async def exchange_session(data: SessionData, response: Response):
         logger.error(f"Auth request failed: {e}")
         raise HTTPException(status_code=500, detail="Authentication service unavailable")
 
-        existing_user = await db.users.find_one({"email": auth_data["email"]}, {"_id": 0})
+    # Check if user exists
+    existing_user = await db.users.find_one({"email": auth_data["email"]}, {"_id": 0})
 
-        if existing_user:
-            user_id = existing_user["user_id"]
+    if existing_user:
+        user_id = existing_user["user_id"]
         await db.users.update_one(
             {"user_id": user_id},
-        {"$set": {"name": auth_data["name"], "picture": auth_data.get("picture")}}
+            {"$set": {"name": auth_data["name"], "picture": auth_data.get("picture")}}
         )
-        else:
+    else:
         user_id = f"user_{uuid.uuid4().hex[:12]}"
         user_doc = {
-        "user_id": user_id,
-        "email": auth_data["email"],
-        "name": auth_data["name"],
-        "picture": auth_data.get("picture"),
-        "created_at": datetime.now(timezone.utc).isoformat()
+            "user_id": user_id,
+            "email": auth_data["email"],
+            "name": auth_data["name"],
+            "picture": auth_data.get("picture"),
+            "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.users.insert_one(user_doc)
 
         # Create default folder in Firestore for new user
         default_folder = {
-        "folder_id": f"folder_{uuid.uuid4().hex[:12]}",
-        "user_id": user_id,
-        "name": "My Notes",
-        "color": "#E06A4F",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": datetime.now(timezone.utc).isoformat()
+            "folder_id": f"folder_{uuid.uuid4().hex[:12]}",
+            "user_id": user_id,
+            "name": "My Notes",
+            "color": "#E06A4F",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
         }
         firestore_db.collection("folders").document(default_folder["folder_id"]).set(default_folder)
 
-        session_token = auth_data["session_token"]
-        expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    session_token = auth_data["session_token"]
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
 
-        session_doc = {
+    session_doc = {
         "user_id": user_id,
         "session_token": session_token,
         "expires_at": expires_at.isoformat(),
         "created_at": datetime.now(timezone.utc).isoformat()
-        }
+    }
 
-        await db.user_sessions.delete_many({"user_id": user_id})
-        await db.user_sessions.insert_one(session_doc)
+    await db.user_sessions.delete_many({"user_id": user_id})
+    await db.user_sessions.insert_one(session_doc)
 
-        response.set_cookie(
-            key="session_token",
+    response.set_cookie(
+        key="session_token",
         value=session_token,
         httponly=True,
         secure=True,
         samesite="none",
         path="/",
         max_age=7 * 24 * 60 * 60
-        )
+    )
 
-        user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
     return user_doc
 
 @api_router.get("/auth/me")
@@ -219,6 +220,11 @@ async def logout(request: Request, response: Response):
 @api_router.get("/health")
 async def health():
     return {"status": "healthy"}
+
+# Root route
+@app.get("/")
+async def root():
+    return {"message": "Xero Notes API is running", "version": "1.0.0"}
 
 app.include_router(api_router)
 
