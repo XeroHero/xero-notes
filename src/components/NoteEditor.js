@@ -8,22 +8,22 @@ import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { common, createLowlight } from "lowlight";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "../components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "../components/ui/dropdown-menu";
 import {
   Bold,
   Italic,
@@ -45,7 +45,7 @@ import {
   Save,
 } from "lucide-react";
 import { toast } from "sonner";
-import debounce from "@/utils/debounce";
+import debounce from "../utils/debounce";
 
 // Create lowlight instance with common languages
 const lowlight = createLowlight(common);

@@ -3,12 +3,12 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { collection, onSnapshot, query, where, orderBy } from "firebase/firestore";
 import { toast } from "sonner";
-import { useAuth } from "@/context/AuthContext";
-import { API } from "@/App";
-import Sidebar from "@/components/Sidebar";
-import NoteEditor from "@/components/NoteEditor";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAuth } from "../context/AuthContext";
+import { API } from "../App";
+import Sidebar from "../components/Sidebar";
+import NoteEditor from "../components/NoteEditor";
+import { Button } from "../components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "../components/ui/sheet";
 import { Menu, Plus } from "lucide-react";
 
 const Dashboard = ({ firestoreDb }) => {

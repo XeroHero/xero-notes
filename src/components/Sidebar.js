@@ -1,15 +1,15 @@
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { ScrollArea } from "../components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "../components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "../components/ui/dialog";
 import {
   Search,
   Plus,

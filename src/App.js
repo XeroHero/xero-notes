@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import "@/App.css";
+import "./App.css";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { Analytics } from "@vercel/analytics/react";
 
@@ -28,12 +28,12 @@ const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : get
 const firestoreDb = getFirestore(firebaseApp);
 
 // Components
-import LoginPage from "@/pages/LoginPage";
-import Dashboard from "@/pages/Dashboard";
-import SharedNotePage from "@/pages/SharedNotePage";
+import LoginPage from "./pages/LoginPage";
+import Dashboard from "./pages/Dashboard";
+import SharedNotePage from "./pages/SharedNotePage";
 
 // Auth Context
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
 // Auth Callback Component
 const AuthCallback = () => {

@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "../components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
