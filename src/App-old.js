@@ -1,26 +1,27 @@
-import { useEffect, useState, useCallback, useRef } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { Toaster } from "@/components/ui/sonner";
-import { toast } from "sonner";
-import { Analytics } from "@vercel/analytics/react";
+
+Action: file_editor create /app/frontend/src/App.js --file-text "import { useEffect, useState, useCallback, useRef } from \"react\";
+import \"@/App.css\";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from \"react-router-dom\";
+import { Toaster } from \"@/components/ui/sonner\";
+import { toast } from \"sonner\";
+import { Analytics } from \"@vercel/analytics/react\";
 
 // Firebase
-import { initializeApp, getApps } from "firebase/app";
-import { getFirestore, collection, onSnapshot, query, where, orderBy } from "firebase/firestore";
+import { initializeApp, getApps } from \"firebase/app\";
+import { getFirestore, collection, onSnapshot, query, where, orderBy } from \"firebase/firestore\";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 // Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyAKnKY6jqNyGiRR7jQUNCdekaQWH3EqcMg",
-  authDomain: "xero-notes.firebaseapp.com",
-  projectId: "xero-notes",
-  storageBucket: "xero-notes.firebasestorage.app",
-  messagingSenderId: "1017234491738",
-  appId: "1:1017234491738:web:fbdcafd6b4d2084f658b63",
-  measurementId: "G-JB04JNKR3N"
+  apiKey: \"AIzaSyAKnKY6jqNyGiRR7jQUNCdekaQWH3EqcMg\",
+  authDomain: \"xero-notes.firebaseapp.com\",
+  projectId: \"xero-notes\",
+  storageBucket: \"xero-notes.firebasestorage.app\",
+  messagingSenderId: \"1017234491738\",
+  appId: \"1:1017234491738:web:fbdcafd6b4d2084f658b63\",
+  measurementId: \"G-JB04JNKR3N\"
 };
 
 // Initialize Firebase
@@ -28,12 +29,12 @@ const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : get
 const firestoreDb = getFirestore(firebaseApp);
 
 // Components
-import LoginPage from "@/pages/LoginPage";
-import Dashboard from "@/pages/Dashboard";
-import SharedNotePage from "@/pages/SharedNotePage";
+import LoginPage from \"@/pages/LoginPage\";
+import Dashboard from \"@/pages/Dashboard\";
+import SharedNotePage from \"@/pages/SharedNotePage\";
 
 // Auth Context
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from \"@/context/AuthContext\";
 
 // Auth Callback Component
 const AuthCallback = () => {
@@ -49,7 +50,7 @@ const AuthCallback = () => {
       const sessionIdMatch = hash.match(/session_id=([^&]+)/);
       
       if (!sessionIdMatch) {
-        navigate("/login");
+        navigate(\"/login\");
         return;
       }
 
@@ -57,24 +58,24 @@ const AuthCallback = () => {
 
       try {
         const response = await fetch(`${API}/auth/session`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
+          method: \"POST\",
+          headers: { \"Content-Type\": \"application/json\" },
+          credentials: \"include\",
           body: JSON.stringify({ session_id: sessionId }),
         });
 
         if (!response.ok) {
-          throw new Error("Authentication failed");
+          throw new Error(\"Authentication failed\");
         }
 
         const userData = await response.json();
         // Clear hash and navigate to dashboard with user data
-        window.history.replaceState(null, "", window.location.pathname);
-        navigate("/dashboard", { state: { user: userData }, replace: true });
+        window.history.replaceState(null, \"\", window.location.pathname);
+        navigate(\"/dashboard\", { state: { user: userData }, replace: true });
       } catch (error) {
-        console.error("Auth error:", error);
-        toast.error("Authentication failed. Please try again.");
-        navigate("/login");
+        console.error(\"Auth error:\", error);
+        toast.error(\"Authentication failed. Please try again.\");
+        navigate(\"/login\");
       }
     };
 
@@ -82,10 +83,10 @@ const AuthCallback = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F4F0EB]">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E06A4F] mx-auto"></div>
-        <p className="mt-4 text-[#78716C] font-body">Signing you in...</p>
+    <div className=\"min-h-screen flex items-center justify-center bg-[#F4F0EB]\">
+      <div className=\"text-center\">
+        <div className=\"animate-spin rounded-full h-12 w-12 border-b-2 border-[#E06A4F] mx-auto\"></div>
+        <p className=\"mt-4 text-[#78716C] font-body\">Signing you in...</p>
       </div>
     </div>
   );
@@ -104,7 +105,7 @@ const ProtectedRoute = ({ children }) => {
     const verify = async () => {
       const isAuthenticated = await checkAuth();
       if (!isAuthenticated) {
-        navigate("/login", { replace: true });
+        navigate(\"/login\", { replace: true });
       }
     };
     verify();
@@ -112,8 +113,8 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading && !location.state?.user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F4F0EB]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E06A4F]"></div>
+      <div className=\"min-h-screen flex items-center justify-center bg-[#F4F0EB]\">
+        <div className=\"animate-spin rounded-full h-12 w-12 border-b-2 border-[#E06A4F]\"></div>
       </div>
     );
   }
@@ -127,16 +128,16 @@ function AppRouter() {
 
   // CRITICAL: Check URL fragment synchronously for session_id
   // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-  if (location.hash?.includes("session_id=")) {
+  if (location.hash?.includes(\"session_id=\")) {
     return <AuthCallback />;
   }
 
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/shared/:shareLink" element={<SharedNotePage />} />
+      <Route path=\"/login\" element={<LoginPage />} />
+      <Route path=\"/shared/:shareLink\" element={<SharedNotePage />} />
       <Route
-        path="/dashboard"
+        path=\"/dashboard\"
         element={
           <ProtectedRoute>
             <Dashboard firestoreDb={firestoreDb} />
@@ -144,7 +145,7 @@ function AppRouter() {
         }
       />
       <Route
-        path="/"
+        path=\"/\"
         element={
           <ProtectedRoute>
             <Dashboard firestoreDb={firestoreDb} />
@@ -171,3 +172,5 @@ function App() {
 
 export default App;
 export { API, firestoreDb };
+"
+Observation: Overwrite successful: /app/frontend/src/App.js

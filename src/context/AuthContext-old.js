@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, useEffect } from "react";
+
+Action: file_editor create /app/frontend/src/context/AuthContext.js --file-text "import { createContext, useContext, useState, useCallback, useEffect } from \"react\";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -11,14 +12,14 @@ export const AuthProvider = ({ children }) => {
   const checkAuth = useCallback(async () => {
     // CRITICAL: If returning from OAuth callback, skip the /me check.
     // AuthCallback will exchange the session_id and establish the session first.
-    if (window.location.hash?.includes("session_id=")) {
+    if (window.location.hash?.includes(\"session_id=\")) {
       setLoading(false);
       return false;
     }
 
     try {
       const response = await fetch(`${API}/auth/me`, {
-        credentials: "include",
+        credentials: \"include\",
       });
 
       if (!response.ok) {
@@ -41,11 +42,11 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       await fetch(`${API}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
+        method: \"POST\",
+        credentials: \"include\",
       });
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error(\"Logout error:\", error);
     }
     setUser(null);
   }, []);
@@ -69,7 +70,9 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error(\"useAuth must be used within an AuthProvider\");
   }
   return context;
 };
+"
+Observation: Create successful: /app/frontend/src/context/AuthContext.js

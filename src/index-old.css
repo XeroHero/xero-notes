@@ -1,4 +1,5 @@
-@tailwind base;
+
+Action: file_editor create /app/frontend/src/index.css --file-text "@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -231,11 +232,11 @@ textarea {
 
 /* Debug wrapper for emergentbase */
 @layer base {
-    [data-debug-wrapper="true"] {
+    [data-debug-wrapper=\"true\"] {
         display: contents !important;
     }
 
-    [data-debug-wrapper="true"] > * {
+    [data-debug-wrapper=\"true\"] > * {
         margin-left: inherit;
         margin-right: inherit;
         margin-top: inherit;
@@ -249,3 +250,5 @@ textarea {
         gap: inherit;
     }
 }
+"
+Observation: Overwrite successful: /app/frontend/src/index.css
