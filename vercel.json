@@ -5,16 +5,8 @@
   "framework": null,
   "routes": [
     {
-      "src": "/api/health",
-      "dest": "/api/health.py"
-    },
-    {
-      "src": "/api/auth/simple-signup",
-      "dest": "/api/simple-auth.py"
-    },
-    {
-      "src": "/api/auth/simple-login",
-      "dest": "/api/simple-auth.py"
+      "src": "/api/test",
+      "dest": "/api/test.py"
     },
     {
       "src": "/(.*)",
