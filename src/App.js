@@ -28,6 +28,7 @@ const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : get
 const firestoreDb = getFirestore(firebaseApp);
 
 // Components
+import SimpleAuth from "./components/SimpleAuth";
 import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
 import SharedNotePage from "./pages/SharedNotePage";
@@ -133,6 +134,7 @@ function AppRouter() {
 
   return (
     <Routes>
+      <Route path="/simple-auth" element={<SimpleAuth />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/shared/:shareLink" element={<SharedNotePage />} />
       <Route

@@ -2,7 +2,7 @@ import sys
 import os
 
 # Add the backend directory to Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'app', 'backend'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'app', 'backend'))
 
 # Import and run the FastAPI app
 from server import app

@@ -14,6 +14,9 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from google.cloud.firestore_v1 import FieldFilter
 
+# Import simple auth
+from simple_auth_test import simple_auth_router
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -227,6 +230,7 @@ async def root():
     return {"message": "Xero Notes API is running", "version": "1.0.0"}
 
 app.include_router(api_router)
+app.include_router(simple_auth_router)
 
 app.add_middleware(
     CORSMiddleware,
