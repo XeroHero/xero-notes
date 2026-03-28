@@ -1,2 +1,15 @@
 
 node_modules/*
+
+# Environment variables
+.env
+app/backend/.env
+
+# Virtual environment
+venv/
+
+# IDE
+.idea/
+
+# OS
+.DS_Store
