@@ -1,6 +1,7 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -13,6 +14,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Pydantic model for login
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
 @app.get("/")
 def home():
     return {"message": "Xero Notes API running", "version": "1.0.0"}
@@ -22,13 +28,9 @@ def health():
     return {"status": "healthy", "message": "FastAPI working on Vercel!"}
 
 @app.post("/api/auth/simple-login")
-async def simple_login(request):
+async def simple_login(login_data: LoginRequest):
     try:
-        data = await request.json()
-        username = data.get('username')
-        password = data.get('password')
-        
-        if username == 'lorenzo_mongo' and password == 'test123':
+        if login_data.username == 'lorenzo_mongo' and login_data.password == 'test123':
             return {
                 "user_id": "user_test_123",
                 "username": "lorenzo_mongo",
@@ -36,9 +38,9 @@ async def simple_login(request):
                 "message": "Login successful"
             }
         else:
-            return {"detail": "Invalid username or password"}
-    except:
-        return {"detail": "Internal server error"}
+            raise HTTPException(status_code=401, detail="Invalid username or password")
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
 @app.get("/api/auth/google")
 async def auth_google():
