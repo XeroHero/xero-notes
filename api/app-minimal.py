@@ -32,12 +32,21 @@ async def simple_login(request):
 
 @app.post("/api/auth/session")
 async def auth_session(request):
-    # Mock OAuth session handling
-    return {
-        "user_id": "user_test_123",
-        "username": "lorenzo_mongo",
-        "email": "lorenzo@test.com"
-    }
+    try:
+        data = await request.json()
+        session_id = data.get('session_id')
+        
+        # Mock validation - in real OAuth, you'd validate the session_id
+        if session_id and session_id.startswith('mock_google_session'):
+            return {
+                "user_id": "user_test_123",
+                "username": "lorenzo_mongo", 
+                "email": "lorenzo@test.com"
+            }
+        else:
+            return {"detail": "Invalid session"}
+    except Exception as e:
+        return {"detail": "Authentication failed"}
 
 @app.get("/api/auth/me")
 async def auth_me():
