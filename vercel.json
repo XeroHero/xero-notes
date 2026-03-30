@@ -6,30 +6,18 @@
   "version": 2,
   "builds": [
         {
-            "src": "api/auth-simple.py",
-            "use": "@vercel/python"
-        },
-        {
-            "src": "api/test-alt.py",
-            "use": "@vercel/python"
+            "src": "api/auth.js",
+            "use": "@vercel/node"
         }
     ],
   "routes": [
     {
-      "src": "/api/test-alt",
-      "dest": "/api/test-alt.py"
+      "src": "/api/auth/simple-login",
+      "dest": "/api/auth.js"
     },
     {
       "src": "/api/health",
-      "dest": "/api/health.py"
-    },
-    {
-      "src": "/api/auth/simple-signup",
-      "dest": "/api/auth-simple.py"
-    },
-    {
-      "src": "/api/auth/simple-login",
-      "dest": "/api/auth-simple.py"
+      "dest": "/api/auth.js"
     },
     {
       "src": "/(.*)",
