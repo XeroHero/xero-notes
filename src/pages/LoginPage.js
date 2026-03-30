@@ -8,11 +8,24 @@ const LoginPage = () => {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/auth/google");
-      const data = await response.json();
+      // Direct login without OAuth flow for now
+      const response = await fetch("/api/auth/simple-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          username: "lorenzo_mongo", 
+          password: "test123" 
+        }),
+      });
       
-      // Redirect to the URL with session ID
-      window.location.href = data.redirect_url;
+      if (response.ok) {
+        const userData = await response.json();
+        // Store user data and redirect to dashboard
+        localStorage.setItem("user", JSON.stringify(userData));
+        window.location.href = "/dashboard";
+      } else {
+        throw new Error("Login failed");
+      }
     } catch (error) {
       console.error("Google login error:", error);
       setIsLoading(false);
