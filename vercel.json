@@ -8,12 +8,16 @@
         {
             "src": "api/auth-simple.py",
             "use": "@vercel/python"
+        },
+        {
+            "src": "api/test-alt.py",
+            "use": "@vercel/python"
         }
     ],
   "routes": [
     {
-      "src": "/api/test-minimal",
-      "dest": "/api/test-minimal.py"
+      "src": "/api/test-alt",
+      "dest": "/api/test-alt.py"
     },
     {
       "src": "/api/health",
