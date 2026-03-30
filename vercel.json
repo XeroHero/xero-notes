@@ -3,6 +3,13 @@
   "outputDirectory": "build",
   "installCommand": "npm install --legacy-peer-deps",
   "framework": null,
+  "version": 2,
+  "builds": [
+        {
+            "src": "api/auth-simple.py",
+            "use": "@vercel/python"
+        }
+    ],
   "routes": [
     {
       "src": "/api/health",
