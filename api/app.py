@@ -22,7 +22,7 @@ def health():
     return {"status": "healthy", "message": "Vercel Python API working!"}
 
 @app.post("/api/auth/simple-login")
-def simple_login(request):
+async def simple_login(request):
     import json
     data = await request.json()
     username = data.get('username')
