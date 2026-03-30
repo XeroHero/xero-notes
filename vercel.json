@@ -10,11 +10,11 @@
     },
     {
       "src": "/api/auth/simple-signup",
-      "dest": "/api/simple-auth-mongo.py"
+      "dest": "/api/auth-simple.py"
     },
     {
       "src": "/api/auth/simple-login",
-      "dest": "/api/simple-auth-mongo.py"
+      "dest": "/api/auth-simple.py"
     },
     {
       "src": "/(.*)",
