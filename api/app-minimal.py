@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
 
 app = FastAPI()
 
@@ -28,5 +29,33 @@ async def simple_login(request):
             return {"detail": "Invalid username or password"}
     except:
         return {"detail": "Internal server error"}
+
+@app.post("/api/auth/session")
+async def auth_session(request):
+    # Mock OAuth session handling
+    return {
+        "user_id": "user_test_123",
+        "username": "lorenzo_mongo",
+        "email": "lorenzo@test.com"
+    }
+
+@app.get("/api/auth/me")
+async def auth_me():
+    # Mock current user endpoint
+    return {
+        "user_id": "user_test_123",
+        "username": "lorenzo_mongo",
+        "email": "lorenzo@test.com"
+    }
+
+@app.post("/api/auth/logout")
+async def auth_logout():
+    # Mock logout endpoint
+    return {"message": "Logged out successfully"}
+
+@app.get("/api/auth/google")
+async def auth_google():
+    # Mock Google OAuth redirect
+    return RedirectResponse(url="/#session_id=mock_google_session_123")
 
 handler = app
