@@ -5,10 +5,18 @@ import { LogIn } from "lucide-react";
 const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     setIsLoading(true);
-    // Use local API for Google OAuth
-    window.location.href = "/api/auth/google";
+    try {
+      const response = await fetch("/api/auth/google");
+      const data = await response.json();
+      
+      // Redirect to the URL with session ID
+      window.location.href = data.redirect_url;
+    } catch (error) {
+      console.error("Google login error:", error);
+      setIsLoading(false);
+    }
   };
 
   return (

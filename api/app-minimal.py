@@ -1,7 +1,17 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def home():
@@ -29,6 +39,14 @@ async def simple_login(request):
             return {"detail": "Invalid username or password"}
     except:
         return {"detail": "Internal server error"}
+
+@app.get("/api/auth/google")
+async def auth_google():
+    # Return a mock session directly instead of redirecting
+    return JSONResponse({
+        "session_id": "mock_google_session_123",
+        "redirect_url": "/#session_id=mock_google_session_123"
+    })
 
 @app.post("/api/auth/session")
 async def auth_session(request):
@@ -61,10 +79,5 @@ async def auth_me():
 async def auth_logout():
     # Mock logout endpoint
     return {"message": "Logged out successfully"}
-
-@app.get("/api/auth/google")
-async def auth_google():
-    # Mock Google OAuth redirect
-    return RedirectResponse(url="/#session_id=mock_google_session_123")
 
 handler = app
