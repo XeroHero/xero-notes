@@ -137,6 +137,7 @@ function AppRouter() {
     <Routes>
       <Route path="/test" element={<TestPage />} />
       <Route path="/simple-auth" element={<SimpleAuth />} />
+      <Route path="/simple-dashboard" element={<Dashboard firestoreDb={firestoreDb} />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/shared/:shareLink" element={<SharedNotePage />} />
       <Route

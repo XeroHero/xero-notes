@@ -15,7 +15,7 @@ from firebase_admin import credentials, firestore
 from google.cloud.firestore_v1 import FieldFilter
 
 # Import simple auth
-from simple_auth_test import simple_auth_router
+from simple_auth_mongo import simple_auth_router
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')

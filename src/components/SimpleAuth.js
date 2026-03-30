@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -11,6 +12,8 @@ const SimpleAuth = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  const navigate = useNavigate();
 
   const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -43,9 +46,9 @@ const SimpleAuth = () => {
           username: data.username,
           email: data.email
         }));
-        // Redirect to main app after 2 seconds
+        // Navigate to simple dashboard after 2 seconds
         setTimeout(() => {
-          window.location.href = '/';
+          navigate('/simple-dashboard');
         }, 2000);
       } else {
         setMessage(data.detail || 'Authentication failed');
