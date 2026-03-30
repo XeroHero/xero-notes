@@ -6,18 +6,14 @@
   "version": 2,
   "builds": [
         {
-            "src": "api/auth.js",
-            "use": "@vercel/node"
+            "src": "api/ultra-minimal.py",
+            "use": "@vercel/python"
         }
     ],
   "routes": [
     {
-      "src": "/api/auth/simple-login",
-      "dest": "/api/auth.js"
-    },
-    {
-      "src": "/api/health",
-      "dest": "/api/auth.js"
+      "src": "/api/ultra-minimal",
+      "dest": "/api/ultra-minimal.py"
     },
     {
       "src": "/(.*)",
