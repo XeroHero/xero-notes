@@ -5,11 +5,15 @@
   "framework": null,
   "version": 2,
   "builds": [
-        {
-            "src": "api/app-minimal.py",
-            "use": "@vercel/python"
-        }
-    ],
+    {
+      "src": "api/app-minimal.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build"
+    }
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
@@ -17,7 +21,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "index.html"
+      "dest": "build/$1"
     }
   ]
 }
