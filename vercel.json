@@ -1,19 +1,18 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "build",
-  "installCommand": "npm install --legacy-peer-deps",
-  "framework": "create-react-app",
   "version": 2,
   "builds": [
     {
-      "src": "api/app-minimal.py",
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "build" }
+    },
+    {
+      "src": "api/app-minimal.py", 
       "use": "@vercel/python"
     }
   ],
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "api/app-minimal.py"
-    }
+  "routes": [
+    { "src": "/api/(.*)", "dest": "api/app-minimal.py" },
+    { "src": "/(.*)", "dest": "build/index.html" }
   ]
 }
