@@ -28,7 +28,7 @@ const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : get
 const firestoreDb = getFirestore(firebaseApp);
 
 // Components
-import SimpleAuth from "./components/SimpleAuth";
+import SimpleAuthDebug from "./components/SimpleAuthDebug";
 import TestPage from "./components/TestPage";
 import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
@@ -136,7 +136,7 @@ function AppRouter() {
   return (
     <Routes>
       <Route path="/test" element={<TestPage />} />
-      <Route path="/simple-auth" element={<SimpleAuth />} />
+      <Route path="/simple-auth-debug" element={<SimpleAuthDebug />} />
       <Route path="/simple-dashboard" element={<Dashboard firestoreDb={firestoreDb} />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/shared/:shareLink" element={<SharedNotePage />} />
