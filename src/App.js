@@ -29,6 +29,7 @@ const firestoreDb = getFirestore(firebaseApp);
 
 // Components
 import SimpleAuthDebug from "./components/SimpleAuthDebug";
+import SimpleDashboard from "./components/SimpleDashboard";
 import TestPage from "./components/TestPage";
 import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
@@ -137,7 +138,7 @@ function AppRouter() {
     <Routes>
       <Route path="/test" element={<TestPage />} />
       <Route path="/simple-auth-debug" element={<SimpleAuthDebug />} />
-      <Route path="/simple-dashboard" element={<Dashboard firestoreDb={firestoreDb} />} />
+      <Route path="/simple-dashboard" element={<SimpleDashboard />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/shared/:shareLink" element={<SharedNotePage />} />
       <Route
