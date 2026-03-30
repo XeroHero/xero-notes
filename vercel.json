@@ -6,18 +6,18 @@
   "version": 2,
   "builds": [
         {
-            "src": "api/ultra-minimal.py",
+            "src": "api/app.py",
             "use": "@vercel/python"
         }
     ],
   "routes": [
     {
-      "src": "/api/ultra-minimal",
-      "dest": "/api/ultra-minimal.py"
+      "src": "/api/(.*)",
+      "dest": "api/app.py"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "index.html"
     }
   ]
 }
