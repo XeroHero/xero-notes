@@ -7,12 +7,12 @@
       "config": { "distDir": "build" }
     },
     {
-      "src": "api/app-minimal.py", 
+      "src": "api/app-mongo.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "api/app-minimal.py" },
+    { "src": "/api/(.*)", "dest": "api/app-mongo.py" },
     { "src": "/(.*)", "dest": "build/index.html" }
   ]
 }
