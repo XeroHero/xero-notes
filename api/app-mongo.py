@@ -27,11 +27,12 @@ app.add_middleware(
 # MongoDB connection
 MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority")
 DB_NAME = os.getenv("DB_NAME", "xero_notes")
+COLLECTION_NAME = "xero_notes"  # Your collection name
 
 try:
     client = MongoClient(MONGO_URI, server_api=ServerApi('1'))
     db = client[DB_NAME]
-    users_collection = db.users
+    users_collection = db[COLLECTION_NAME]
     # Test connection
     client.admin.command('ping')
     print("MongoDB connection successful")
