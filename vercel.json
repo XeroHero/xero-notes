@@ -12,6 +12,10 @@
     ],
   "routes": [
     {
+      "src": "/api/test-minimal",
+      "dest": "/api/test-minimal.py"
+    },
+    {
       "src": "/api/health",
       "dest": "/api/health.py"
     },
