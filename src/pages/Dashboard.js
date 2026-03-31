@@ -56,7 +56,7 @@ const Dashboard = ({ firestoreDb }) => {
     // Notes listener - use MongoDB API instead of Firebase
     const loadNotes = async () => {
       try {
-        const response = await fetch(`${API}/notes`);
+        const response = await fetch("/api/notes");  // Use relative URL
         if (response.ok) {
           const data = await response.json();
           setNotes(data.notes || []);
@@ -96,7 +96,7 @@ const Dashboard = ({ firestoreDb }) => {
   // Create new note
   const handleCreateNote = async () => {
     try {
-      const response = await fetch(`${API}/notes`, {
+      const response = await fetch("/api/notes", {  // Use relative URL
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
