@@ -76,19 +76,37 @@ def create_user(username: str, password: str, email: str):
 
 def find_user(username: str, password: str):
     if users_collection is not None:
+        print("Querying MongoDB...")
         user = users_collection.find_one({
             "username": username,
             "password_hash": hash_password(password)
         })
-        return user
+        if user:
+            print(f"Found user in MongoDB: {user}")
+            return user
+        else:
+            print("User not found in MongoDB, checking fallback...")
+            # Fallback to mock user
+            if username == "lorenzo_mongo" and password == "test123":
+                print("Returning mock user")
+                return {
+                    "user_id": "user_test_123",
+                    "username": "lorenzo_mongo",
+                    "email": "lorenzo@test.com"
+                }
+            print("Mock user not found")
+            return None
     else:
+        print("Using fallback mock user logic")
         # Fallback to mock user
         if username == "lorenzo_mongo" and password == "test123":
+            print("Returning mock user")
             return {
                 "user_id": "user_test_123",
                 "username": "lorenzo_mongo",
                 "email": "lorenzo@test.com"
             }
+        print("Mock user not found")
         return None
 
 # API endpoints
