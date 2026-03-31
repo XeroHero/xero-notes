@@ -101,9 +101,19 @@ def health():
     return {"status": "healthy", "message": "FastAPI working on Vercel!", "mongo_connected": users_collection is not None}
 
 @app.post("/api/auth/simple-login")
-async def simple_login(login_data: LoginRequest):
+async def simple_login(request: Request):
     try:
-        print(f"Login attempt: {login_data.username}")  # Debug log
+        # Parse request manually first to debug
+        body = await request.body()
+        print(f"Raw body: {body}")
+        
+        data = await request.json()
+        print(f"Parsed data: {data}")
+        
+        # Now validate with Pydantic
+        login_data = LoginRequest(**data)
+        print(f"Validated data: {login_data}")
+        
         user = find_user(login_data.username, login_data.password)
         
         if user:
