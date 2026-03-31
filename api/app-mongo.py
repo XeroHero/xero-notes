@@ -114,7 +114,9 @@ async def simple_login(request: Request):
         login_data = LoginRequest(**data)
         print(f"Validated data: {login_data}")
         
+        print("About to call find_user...")
         user = find_user(login_data.username, login_data.password)
+        print(f"find_user returned: {user}")
         
         if user:
             return {
@@ -124,6 +126,7 @@ async def simple_login(request: Request):
                 "message": "Login successful"
             }
         else:
+            print("User not found, returning 401")
             raise HTTPException(status_code=401, detail="Invalid username or password")
     except HTTPException:
         raise
