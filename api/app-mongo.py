@@ -103,6 +103,7 @@ def health():
 @app.post("/api/auth/simple-login")
 async def simple_login(login_data: LoginRequest):
     try:
+        print(f"Login attempt: {login_data.username}")  # Debug log
         user = find_user(login_data.username, login_data.password)
         
         if user:
@@ -114,8 +115,28 @@ async def simple_login(login_data: LoginRequest):
             }
         else:
             raise HTTPException(status_code=401, detail="Invalid username or password")
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        print(f"Login error: {str(e)}")  # Debug log
+        raise HTTPException(status_code=422, detail=f"Validation error: {str(e)}")
+
+@app.post("/api/auth/test")
+async def test_login(request: Request):
+    # Debug endpoint to see what's being received
+    try:
+        body = await request.body()
+        data = await request.json()
+        return {
+            "received_body": str(body),
+            "received_data": data,
+            "success": True
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "success": False
+        }
 
 @app.post("/api/auth/simple-signup")
 async def simple_signup(signup_data: SignupRequest):
