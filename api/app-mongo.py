@@ -24,6 +24,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Global OPTIONS handler for CORS preflight
+@app.options("/{path:path}")
+async def global_options(path: str):
+    return {"success": True}
+
 # MongoDB connection
 MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority")
 DB_NAME = os.getenv("DB_NAME", "xero_notes")
@@ -204,10 +209,6 @@ async def auth_logout():
     return {"message": "Logged out successfully"}
 
 # Notes endpoints
-@app.options("/api/notes")
-async def options_notes():
-    return {"success": True}
-
 @app.post("/api/notes")
 async def create_note(request: Request):
     try:
@@ -233,10 +234,6 @@ async def create_note(request: Request):
             return {"success": True, "note_id": f"note_{uuid.uuid4().hex[:12]}"}
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
-
-@app.options("/api/notes")
-async def options_get_notes():
-    return {"success": True}
 
 @app.get("/api/notes")
 async def get_notes():
