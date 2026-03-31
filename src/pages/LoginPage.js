@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { LogIn } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
@@ -22,7 +24,7 @@ const LoginPage = () => {
         const userData = await response.json();
         // Store user data and redirect to dashboard
         localStorage.setItem("user", JSON.stringify(userData));
-        window.location.href = "/dashboard";
+        navigate("/dashboard");  // Use React Router instead
       } else {
         throw new Error("Login failed");
       }
