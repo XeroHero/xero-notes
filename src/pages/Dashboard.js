@@ -53,25 +53,34 @@ const Dashboard = ({ firestoreDb }) => {
       console.error("Folders listener error:", error);
     });
 
-    // Notes listener
-    const notesQuery = query(
-      collection(firestoreDb, "notes"),
-      where("user_id", "==", userId),
-      orderBy("updated_at", "desc")
-    );
+    // Notes listener - use MongoDB API instead of Firebase
+    const loadNotes = async () => {
+      try {
+        const response = await fetch(`${API}/notes`);
+        if (response.ok) {
+          const data = await response.json();
+          setNotes(data.notes || []);
+        } else {
+          console.error("Failed to load notes");
+          setNotes([]);
+        }
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Notes loading error:", error);
+        setNotes([]);
+        setIsLoading(false);
+      }
+    };
 
-    const unsubNotes = onSnapshot(notesQuery, (snapshot) => {
-      const notesData = snapshot.docs.map(doc => doc.data());
-      setNotes(notesData);
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Notes listener error:", error);
-      setIsLoading(false);
-    });
+    // Load notes initially
+    loadNotes();
+
+    // Set up polling to refresh notes every 30 seconds
+    const intervalId = setInterval(loadNotes, 30000);
 
     return () => {
       unsubFolders();
-      unsubNotes();
+      clearInterval(intervalId);
     };
   }, [userId, firestoreDb]);
 
