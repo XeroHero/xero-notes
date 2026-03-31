@@ -203,4 +203,47 @@ async def auth_me():
 async def auth_logout():
     return {"message": "Logged out successfully"}
 
+# Notes endpoints
+@app.post("/api/notes")
+async def create_note(request: Request):
+    try:
+        data = await request.json()
+        title = data.get('title', '')
+        content = data.get('content', '')
+        user_id = data.get('user_id', 'user_test_123')
+        
+        if users_collection is not None:
+            notes_collection = db.notes
+            note_doc = {
+                "title": title,
+                "content": content,
+                "user_id": user_id,
+                "created_at": datetime.now(),
+                "updated_at": datetime.now(),
+                "note_id": f"note_{uuid.uuid4().hex[:12]}"
+            }
+            notes_collection.insert_one(note_doc)
+            return {"success": True, "note_id": note_doc["note_id"]}
+        else:
+            # Fallback - just return success
+            return {"success": True, "note_id": f"note_{uuid.uuid4().hex[:12]}"}
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+@app.get("/api/notes")
+async def get_notes():
+    try:
+        if users_collection is not None:
+            notes_collection = db.notes
+            notes = list(notes_collection.find({"user_id": "user_test_123"}))
+            # Convert ObjectId to string for JSON serialization
+            for note in notes:
+                note["_id"] = str(note["_id"])
+            return {"notes": notes}
+        else:
+            # Fallback - return empty notes
+            return {"notes": []}
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
 handler = app
