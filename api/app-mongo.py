@@ -56,7 +56,7 @@ def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
 def create_user(username: str, password: str, email: str):
-    if users_collection:
+    if users_collection is not None:
         user_doc = {
             "username": username,
             "password_hash": hash_password(password),
@@ -75,7 +75,7 @@ def create_user(username: str, password: str, email: str):
         }
 
 def find_user(username: str, password: str):
-    if users_collection:
+    if users_collection is not None:
         user = users_collection.find_one({
             "username": username,
             "password_hash": hash_password(password)
@@ -152,7 +152,7 @@ async def test_login(request: Request):
 async def simple_signup(signup_data: SignupRequest):
     try:
         # Check if user already exists
-        if users_collection:
+        if users_collection is not None:
             existing_user = users_collection.find_one({"username": signup_data.username})
             if existing_user:
                 raise HTTPException(status_code=400, detail="Username already exists")
