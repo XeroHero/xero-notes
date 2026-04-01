@@ -173,7 +173,7 @@ const Dashboard = () => {
       if (!response.ok) throw new Error("Failed to share note");
 
       const data = await response.json();
-      const shareUrl = `${window.location.origin}/shared/${data.share_link}`;
+      const shareUrl = `https://xero-notes.vercel.app/shared/${data.share_link}`;
 
       await navigator.clipboard.writeText(shareUrl);
       toast.success("Share link copied to clipboard!");
