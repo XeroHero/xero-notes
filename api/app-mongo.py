@@ -357,18 +357,22 @@ async def get_note(note_id: str):
 
 @app.post("/api/notes/{note_id}/share")
 async def share_note(note_id: str):
+    print(f"Share endpoint called with note_id: {note_id}")
     try:
         # Check if MongoDB is available by testing connection
         if users_collection is not None:
+            print("MongoDB available")
             notes_collection = db.notes
             
             # Check if note exists
             note = notes_collection.find_one({"note_id": note_id})
+            print(f"Note found: {note is not None}")
             if not note:
                 raise HTTPException(status_code=404, detail="Note not found")
             
             # Generate unique share link
             share_link = f"{uuid.uuid4().hex[:12]}"
+            print(f"Generated share link: {share_link}")
             
             # Update note with share information
             result = notes_collection.update_one(
@@ -382,26 +386,33 @@ async def share_note(note_id: str):
                 }
             )
             
+            print(f"Update result - modified: {result.modified_count}, matched: {result.matched_count}")
+            
             if result.modified_count > 0 or result.matched_count > 0:
                 return {"share_link": share_link}
             else:
                 raise HTTPException(status_code=500, detail="Failed to share note")
         else:
+            print("MongoDB not available, using fallback")
             # Fallback - return mock share link
             share_link = f"{uuid.uuid4().hex[:12]}"
             return {"share_link": share_link}
     except HTTPException:
         raise
     except Exception as e:
+        print(f"Error: {str(e)}")
         raise HTTPException(status_code=422, detail=str(e))
 
 @app.get("/api/shared/{share_link}")
 async def get_shared_note(share_link: str):
+    print(f"Shared note endpoint called with link: {share_link}")
     try:
         # Check if MongoDB is available by testing connection
         if users_collection is not None:
+            print("MongoDB available")
             notes_collection = db.notes
             note = notes_collection.find_one({"share_link": share_link, "is_shared": True})
+            print(f"Shared note found: {note is not None}")
             if note:
                 note["_id"] = str(note["_id"])
                 
@@ -411,10 +422,13 @@ async def get_shared_note(share_link: str):
                     "picture": None
                 }
                 
+                print("Returning shared note successfully")
                 return {"note": note, "author": author}
             else:
+                print("Shared note not found")
                 raise HTTPException(status_code=404, detail="Shared note not found")
         else:
+            print("MongoDB not available, using fallback")
             # Fallback - return mock shared note
             note = {"note_id": "mock", "title": "Mock Shared Note", "content": "Mock shared content"}
             author = {"name": "Xero Notes User", "picture": None}
@@ -422,6 +436,7 @@ async def get_shared_note(share_link: str):
     except HTTPException:
         raise
     except Exception as e:
+        print(f"Error: {str(e)}")
         raise HTTPException(status_code=422, detail=str(e))
 
 # Folders endpoints
