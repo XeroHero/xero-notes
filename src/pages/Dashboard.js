@@ -265,6 +265,7 @@ const Dashboard = () => {
           onDeleteFolder={handleDeleteFolder}
           onLogout={handleLogout}
         />
+        </div>
       </div>
 
       {/* Mobile Header */}
