@@ -3,8 +3,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
-import Underline from "@tiptap/extension-underline";
-import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { common, createLowlight } from "lowlight";
@@ -59,15 +57,9 @@ const NoteEditor = ({ note, folders, onUpdate, onDelete, onShare }) => {
     extensions: [
       StarterKit.configure({
         codeBlock: false,
+        link: false,
       }),
       Highlight.configure({ multicolor: true }),
-      Underline,
-      Link.configure({
-        openOnClick: true,
-        HTMLAttributes: {
-          class: "text-[#E06A4F] underline cursor-pointer",
-        },
-      }),
       Placeholder.configure({
         placeholder: "Start writing your note...",
       }),
