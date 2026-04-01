@@ -85,7 +85,9 @@ const NoteEditor = ({ note, folders, onUpdate, onDelete, onShare }) => {
       },
     },
     onUpdate: ({ editor }) => {
-      debouncedSave(note.note_id, { content: editor.getHTML() });
+      if (note.note_id) {
+        debouncedSave(note.note_id, { content: editor.getHTML() });
+      }
     },
   });
 
@@ -102,6 +104,10 @@ const NoteEditor = ({ note, folders, onUpdate, onDelete, onShare }) => {
   // Debounced save function
   const debouncedSave = useCallback(
     debounce(async (noteId, data) => {
+      if (!noteId) {
+        console.error('Cannot save note: noteId is undefined');
+        return;
+      }
       setIsSaving(true);
       try {
         await onUpdate(noteId, data);
@@ -117,25 +123,33 @@ const NoteEditor = ({ note, folders, onUpdate, onDelete, onShare }) => {
   const handleTitleChange = (e) => {
     const newTitle = e.target.value;
     setTitle(newTitle);
-    debouncedSave(note.note_id, { title: newTitle });
+    if (note.note_id) {
+      debouncedSave(note.note_id, { title: newTitle });
+    }
   };
 
   // Handle folder change
   const handleFolderChange = (folderId) => {
-    onUpdate(note.note_id, { folder_id: folderId === "none" ? null : folderId });
-    toast.success("Note moved");
+    if (note.note_id) {
+      onUpdate(note.note_id, { folder_id: folderId === "none" ? null : folderId });
+      toast.success("Note moved");
+    }
   };
 
   // Handle delete
   const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this note?")) {
-      onDelete(note.note_id);
+    if (note.note_id) {
+      if (window.confirm("Are you sure you want to delete this note?")) {
+        onDelete(note.note_id);
+      }
     }
   };
 
   // Handle share
   const handleShare = () => {
-    onShare(note.note_id);
+    if (note.note_id) {
+      onShare(note.note_id);
+    }
   };
 
   // Add link

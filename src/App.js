@@ -5,27 +5,7 @@ import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { Analytics } from "@vercel/analytics/react";
 
-// Firebase
-import { initializeApp, getApps } from "firebase/app";
-import { getFirestore, collection, onSnapshot, query, where, orderBy } from "firebase/firestore";
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = "/api";  // Use relative URL to avoid CORS issues
-
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyAKnKY6jqNyGiRR7jQUNCdekaQWH3EqcMg",
-  authDomain: "xero-notes.firebaseapp.com",
-  projectId: "xero-notes",
-  storageBucket: "xero-notes.firebasestorage.app",
-  messagingSenderId: "1017234491738",
-  appId: "1:1017234491738:web:fbdcafd6b4d2084f658b63",
-  measurementId: "G-JB04JNKR3N"
-};
-
-// Initialize Firebase
-const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const firestoreDb = getFirestore(firebaseApp);
 
 // Components
 import SimpleAuthDebug from "./components/SimpleAuthDebug";
@@ -145,7 +125,7 @@ function AppRouter() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard firestoreDb={firestoreDb} />
+            <Dashboard />
           </ProtectedRoute>
         }
       />
@@ -153,7 +133,7 @@ function AppRouter() {
         path="/"
         element={
           <ProtectedRoute>
-            <Dashboard firestoreDb={firestoreDb} />
+            <Dashboard />
           </ProtectedRoute>
         }
       />
@@ -176,4 +156,4 @@ function App() {
 }
 
 export default App;
-export { API, firestoreDb };
+export { API };

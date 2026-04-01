@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = "/api";  // Use relative URL to call same-domain backend
 
 const AuthContext = createContext(null);
 

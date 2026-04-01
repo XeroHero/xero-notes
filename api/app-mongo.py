@@ -20,14 +20,21 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Global OPTIONS handler for CORS preflight
 @app.options("/{path:path}")
 async def global_options(path: str):
-    return {"success": True}
+    return JSONResponse(
+        content={"success": True},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
+    )
 
 # MongoDB connection
 MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority")
@@ -216,6 +223,8 @@ async def create_note(request: Request):
         title = data.get('title', '')
         content = data.get('content', '')
         user_id = data.get('user_id', 'user_test_123')
+        folder_id = data.get('folder_id', None)
+        is_shared = data.get('is_shared', False)
         
         if users_collection is not None:
             notes_collection = db.notes
@@ -223,15 +232,28 @@ async def create_note(request: Request):
                 "title": title,
                 "content": content,
                 "user_id": user_id,
+                "folder_id": folder_id,
+                "is_shared": is_shared,
                 "created_at": datetime.now(),
                 "updated_at": datetime.now(),
                 "note_id": f"note_{uuid.uuid4().hex[:12]}"
             }
             notes_collection.insert_one(note_doc)
-            return {"success": True, "note_id": note_doc["note_id"]}
+            # Convert ObjectId to string for JSON serialization
+            note_doc["_id"] = str(note_doc["_id"])
+            return note_doc
         else:
-            # Fallback - just return success
-            return {"success": True, "note_id": f"note_{uuid.uuid4().hex[:12]}"}
+            # Fallback - return mock note
+            note_id = f"note_{uuid.uuid4().hex[:12]}"
+            return {
+                "_id": note_id,
+                "note_id": note_id,
+                "title": title,
+                "content": content,
+                "user_id": user_id,
+                "folder_id": folder_id,
+                "is_shared": is_shared
+            }
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
 
@@ -255,22 +277,42 @@ async def get_notes():
 async def update_note(note_id: str, request: Request):
     try:
         data = await request.json()
-        title = data.get('title', '')
-        content = data.get('content', '')
         
         if users_collection is not None:
             notes_collection = db.notes
+            # Build update dict with only provided fields
+            update_data = {}
+            if 'title' in data:
+                update_data['title'] = data['title']
+            if 'content' in data:
+                update_data['content'] = data['content']
+            if 'folder_id' in data:
+                update_data['folder_id'] = data['folder_id']
+            if 'is_shared' in data:
+                update_data['is_shared'] = data['is_shared']
+            update_data['updated_at'] = datetime.now()
+            
             result = notes_collection.update_one(
                 {"note_id": note_id},
-                {"$set": {"title": title, "content": content, "updated_at": datetime.now()}}
+                {"$set": update_data}
             )
-            if result.modified_count > 0:
-                return {"success": True, "message": "Note updated"}
+            if result.modified_count > 0 or result.matched_count > 0:
+                # Return the updated note
+                updated_note = notes_collection.find_one({"note_id": note_id})
+                if updated_note:
+                    updated_note["_id"] = str(updated_note["_id"])
+                    return updated_note
+                raise HTTPException(status_code=404, detail="Note not found")
             else:
                 raise HTTPException(status_code=404, detail="Note not found")
         else:
-            # Fallback - just return success
-            return {"success": True, "message": "Note updated (mock)"}
+            # Fallback - return mock updated note
+            return {
+                "note_id": note_id,
+                "title": data.get('title', ''),
+                "content": data.get('content', ''),
+                "updated_at": datetime.now().isoformat()
+            }
     except HTTPException:
         raise
     except Exception as e:
@@ -308,6 +350,64 @@ async def get_note(note_id: str):
         else:
             # Fallback - return mock note
             return {"note": {"note_id": note_id, "title": "Mock Note", "content": "Mock content"}}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+# Folders endpoints
+@app.get("/api/folders")
+async def get_folders():
+    try:
+        if users_collection is not None:
+            folders_collection = db.folders
+            folders = list(folders_collection.find({"user_id": "user_test_123"}))
+            # Convert ObjectId to string for JSON serialization
+            for folder in folders:
+                folder["_id"] = str(folder["_id"])
+            return {"folders": folders}
+        else:
+            # Fallback - return empty folders
+            return {"folders": []}
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+@app.post("/api/folders")
+async def create_folder(request: Request):
+    try:
+        data = await request.json()
+        name = data.get('name', '')
+        user_id = data.get('user_id', 'user_test_123')
+        
+        if users_collection is not None:
+            folders_collection = db.folders
+            folder_doc = {
+                "name": name,
+                "user_id": user_id,
+                "created_at": datetime.now(),
+                "folder_id": f"folder_{uuid.uuid4().hex[:12]}"
+            }
+            folders_collection.insert_one(folder_doc)
+            return {"success": True, "folder_id": folder_doc["folder_id"]}
+        else:
+            # Fallback - just return success
+            return {"success": True, "folder_id": f"folder_{uuid.uuid4().hex[:12]}"}
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+@app.delete("/api/folders/{folder_id}")
+async def delete_folder(folder_id: str):
+    try:
+        if users_collection is not None:
+            folders_collection = db.folders
+            result = folders_collection.delete_one({"folder_id": folder_id})
+            if result.deleted_count > 0:
+                return {"success": True, "message": "Folder deleted"}
+            else:
+                raise HTTPException(status_code=404, detail="Folder not found")
+        else:
+            # Fallback - just return success
+            return {"success": True, "message": "Folder deleted (mock)"}
     except HTTPException:
         raise
     except Exception as e:

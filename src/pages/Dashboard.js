@@ -1,7 +1,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { collection, onSnapshot, query, where, orderBy } from "firebase/firestore";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import { API } from "../App";
@@ -11,7 +10,7 @@ import { Button } from "../components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../components/ui/sheet";
 import { Menu, Plus } from "lucide-react";
 
-const Dashboard = ({ firestoreDb }) => {
+const Dashboard = () => {
   const { user, logout, setUserData } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,29 +33,32 @@ const Dashboard = ({ firestoreDb }) => {
   const currentUser = user || location.state?.user;
   const userId = currentUser?.user_id;
 
-  // Real-time Firestore listeners
+  // Load folders and notes from MongoDB API
   useEffect(() => {
     if (!userId) return;
 
     setIsLoading(true);
 
-    // Folders listener
-    const foldersQuery = query(
-      collection(firestoreDb, "folders"),
-      where("user_id", "==", userId)
-    );
+    // Load folders from API
+    const loadFolders = async () => {
+      try {
+        const response = await fetch("/api/folders");
+        if (response.ok) {
+          const data = await response.json();
+          setFolders(data.folders || []);
+        } else {
+          setFolders([]);
+        }
+      } catch (error) {
+        console.error("Folders loading error:", error);
+        setFolders([]);
+      }
+    };
 
-    const unsubFolders = onSnapshot(foldersQuery, (snapshot) => {
-      const foldersData = snapshot.docs.map(doc => doc.data());
-      setFolders(foldersData);
-    }, (error) => {
-      console.error("Folders listener error:", error);
-    });
-
-    // Notes listener - use MongoDB API instead of Firebase
+    // Load notes from API
     const loadNotes = async () => {
       try {
-        const response = await fetch("/api/notes");  // Use relative URL
+        const response = await fetch("/api/notes");
         if (response.ok) {
           const data = await response.json();
           setNotes(data.notes || []);
@@ -72,17 +74,17 @@ const Dashboard = ({ firestoreDb }) => {
       }
     };
 
-    // Load notes initially
+    loadFolders();
     loadNotes();
 
-    // Set up polling to refresh notes every 30 seconds
-    const intervalId = setInterval(loadNotes, 30000);
+    // Polling to refresh data every 30 seconds
+    const intervalId = setInterval(() => {
+      loadFolders();
+      loadNotes();
+    }, 30000);
 
-    return () => {
-      unsubFolders();
-      clearInterval(intervalId);
-    };
-  }, [userId, firestoreDb]);
+    return () => clearInterval(intervalId);
+  }, [userId]);
 
   // Filter notes based on folder and search
   const filteredNotes = notes.filter(note => {
