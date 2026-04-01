@@ -173,7 +173,9 @@ const Dashboard = () => {
       if (!response.ok) throw new Error("Failed to share note");
 
       const data = await response.json();
+      console.log("Share response data:", data);
       const shareUrl = `${window.location.origin}/shared/${data.share_link}`;
+      console.log("Generated share URL:", shareUrl);
 
       await navigator.clipboard.writeText(shareUrl);
       toast.success("Share link copied to clipboard!");

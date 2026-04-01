@@ -57,7 +57,6 @@ const NoteEditor = ({ note, folders, onUpdate, onDelete, onShare }) => {
     extensions: [
       StarterKit.configure({
         codeBlock: false,
-        link: false,
       }),
       Highlight.configure({ multicolor: true }),
       Placeholder.configure({
