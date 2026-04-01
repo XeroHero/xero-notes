@@ -426,6 +426,9 @@ async def get_shared_note(share_link: str):
                 return {"note": note, "author": author}
             else:
                 print("Shared note not found")
+                # List all shared notes for debugging
+                all_shared_notes = list(notes_collection.find({"is_shared": True}, {"note_id": 1, "share_link": 1, "title": 1}))
+                print(f"All shared notes in DB: {all_shared_notes}")
                 raise HTTPException(status_code=404, detail="Shared note not found")
         else:
             print("MongoDB not available, using fallback")
@@ -438,6 +441,18 @@ async def get_shared_note(share_link: str):
     except Exception as e:
         print(f"Error: {str(e)}")
         raise HTTPException(status_code=422, detail=str(e))
+
+@app.get("/api/debug/shared-notes")
+async def debug_shared_notes():
+    try:
+        if users_collection is not None:
+            notes_collection = db.notes
+            all_shared_notes = list(notes_collection.find({"is_shared": True}, {"note_id": 1, "share_link": 1, "title": 1}))
+            return {"shared_notes": all_shared_notes}
+        else:
+            return {"shared_notes": []}
+    except Exception as e:
+        return {"error": str(e)}
 
 # Folders endpoints
 @app.get("/api/folders")
