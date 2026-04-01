@@ -243,10 +243,10 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="h-screen flex bg-gradient-to-br from-[#FDF8F5] to-[#F4F0EB]" data-testid="dashboard">
+    <div className="h-screen flex bg-gradient-to-br from-[#FDF8F5] to-[#F4F0EB] overflow-hidden" data-testid="dashboard">
       {/* Desktop Sidebar */}
-      <div className="hidden md:block w-80 flex-shrink-0">
-        <div className="h-full bg-white/80 backdrop-blur-xl border-r border-[#E7E5E4]/60 shadow-xl shadow-[#E7E5E4]/20">
+      <div className="hidden md:block w-80 lg:w-85 flex-shrink-0">
+        <div className="h-full bg-white/70 backdrop-blur-xl border-r border-[#E7E5E4]/50 shadow-xl shadow-[#E7E5E4]/10">
           <Sidebar
           user={currentUser}
           folders={folders}
@@ -312,9 +312,9 @@ const Dashboard = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col md:pt-0 pt-14">
+      <div className="flex-1 flex flex-col md:pt-0 pt-14 overflow-hidden">
         {selectedNote ? (
-          <div className="flex-1 m-4 mb-0 rounded-2xl overflow-hidden shadow-2xl shadow-[#E7E5E4]/40 bg-white border border-[#E7E5E4]/60">
+          <div className="flex-1 m-3 lg:m-5 mb-0 rounded-2xl overflow-hidden shadow-2xl shadow-[#E7E5E4]/30 bg-white/90 backdrop-blur-sm border border-[#E7E5E4]/50">
             <NoteEditor
             note={selectedNote}
             folders={folders}
@@ -324,25 +324,25 @@ const Dashboard = () => {
           />
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center p-8">
+          <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
             <div className="text-center max-w-md">
               <div className="relative mb-8">
-                <div className="absolute inset-0 bg-[#E06A4F]/10 rounded-3xl blur-2xl transform rotate-6"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-[#E06A4F]/15 to-[#F59E0B]/10 rounded-3xl blur-2xl transform rotate-6"></div>
                 <img
                   src="https://images.unsplash.com/photo-1759296844873-e0c694c24284?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2MzR8MHwxfHNlYXJjaHwzfHxtaW5pbWFsaXN0JTIwY2xlYW4lMjBkZXNrJTIwd29ya3NwYWNlJTIwYnJpZ2h0fGVufDB8fHx8MTc3NDUzNjU0MXww&ixlib=rb-4.1.0&q=85"
                   alt="Empty state"
-                  className="w-56 h-56 object-cover rounded-3xl mx-auto mb-6 shadow-2xl shadow-[#E7E5E4]/40 relative z-10"
+                  className="w-48 h-48 sm:w-56 sm:h-56 object-cover rounded-3xl mx-auto mb-6 shadow-2xl shadow-[#E7E5E4]/40 relative z-10 ring-1 ring-[#E7E5E4]/50"
                 />
               </div>
-              <h2 className="font-heading text-3xl font-semibold text-[#1C1917] mb-3 tracking-tight">
+              <h2 className="font-heading text-2xl sm:text-3xl font-semibold text-[#1C1917] mb-3 tracking-tight">
                 No note selected
               </h2>
-              <p className="text-[#78716C] font-body mb-8 text-lg leading-relaxed">
-                Select a note from the sidebar or create a new one<br />to get started
+              <p className="text-[#78716C] font-body mb-8 text-base sm:text-lg leading-relaxed">
+                Select a note from the sidebar or create a new one<br className="hidden sm:inline" />to get started
               </p>
               <Button
                 onClick={handleCreateNote}
-                className="bg-gradient-to-r from-[#E06A4F] to-[#C95A41] hover:from-[#C95A41] hover:to-[#E06A4F] text-white rounded-full px-8 py-6 text-base font-medium shadow-lg shadow-[#E06A4F]/30 transition-all duration-300 hover:shadow-xl hover:shadow-[#E06A4F]/40 hover:-translate-y-0.5"
+                className="bg-gradient-to-r from-[#E06A4F] to-[#C95A41] hover:from-[#C95A41] hover:to-[#E06A4F] text-white rounded-full px-8 py-6 text-base font-medium shadow-lg shadow-[#E06A4F]/25 transition-all duration-300 hover:shadow-xl hover:shadow-[#E06A4F]/35 hover:-translate-y-0.5 ring-1 ring-white/50"
                 data-testid="create-first-note-button"
               >
                 <Plus className="h-5 w-5 mr-2" />
