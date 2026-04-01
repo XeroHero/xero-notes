@@ -5,6 +5,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
 import Placeholder from "@tiptap/extension-placeholder";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import Link from "@tiptap/extension-link";
 import { common, createLowlight } from "lowlight";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -57,6 +58,14 @@ const NoteEditor = ({ note, folders, onUpdate, onDelete, onShare }) => {
     extensions: [
       StarterKit.configure({
         codeBlock: false,
+        link: false, // Disable default link extension
+      }),
+      Link.configure({
+        openOnClick: false, // Don't handle clicks automatically
+        HTMLAttributes: {
+          target: '_blank', // Open in new tab
+          rel: 'noopener noreferrer',
+        },
       }),
       Highlight.configure({ multicolor: true }),
       Placeholder.configure({
