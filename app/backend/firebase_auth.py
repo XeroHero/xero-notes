@@ -24,11 +24,24 @@ firebase_admin_json = os.environ.get('FIREBASE_ADMIN_JSON')
 if firebase_admin_json:
     # Use environment variable (Vercel deployment)
     import json
-    firebase_config = json.loads(firebase_admin_json)
-    cred = credentials.Certificate(firebase_config)
+    try:
+        # Try to parse as JSON string
+        firebase_config = json.loads(firebase_admin_json)
+        cred = credentials.Certificate(firebase_config)
+        print("Firebase Admin SDK initialized from environment variable")
+    except json.JSONDecodeError as e:
+        print(f"Failed to parse FIREBASE_ADMIN_JSON: {e}")
+        # Try treating it as a file path
+        try:
+            cred = credentials.Certificate(firebase_admin_json)
+            print("Firebase Admin SDK initialized from file path")
+        except Exception as file_error:
+            print(f"Also failed to load as file: {file_error}")
+            raise
 else:
     # Use file (local development)
     cred = credentials.Certificate(ROOT_DIR / 'firebase-admin.json')
+    print("Firebase Admin SDK initialized from local file")
 
 try:
     firebase_app = firebase_admin.initialize_app(cred)
@@ -121,8 +134,15 @@ async def get_or_create_user(firebase_user: FirebaseUser) -> User:
 async def firebase_login(request: FirebaseLoginRequest, response: Response):
     """Verify Firebase token and create session"""
     try:
+        print(f"Firebase login attempt for user: {request.firebaseUser.email}")
+        
         # Verify the Firebase token
-        decoded_token = await verify_firebase_token(request.idToken)
+        try:
+            decoded_token = await verify_firebase_token(request.idToken)
+            print(f"Token verified successfully: {decoded_token.get('uid')}")
+        except Exception as token_error:
+            print(f"Token verification failed: {token_error}")
+            raise HTTPException(status_code=401, detail=f"Token verification failed: {str(token_error)}")
         
         # Ensure the token UID matches the provided user UID
         if decoded_token.get('uid') != request.firebaseUser.uid:
@@ -130,6 +150,7 @@ async def firebase_login(request: FirebaseLoginRequest, response: Response):
         
         # Get or create user in database
         user = await get_or_create_user(request.firebaseUser)
+        print(f"User retrieved/created: {user.user_id}")
         
         # Create session token
         session_token = f"session_{uuid.uuid4().hex[:24]}"
@@ -159,6 +180,8 @@ async def firebase_login(request: FirebaseLoginRequest, response: Response):
             max_age=7 * 24 * 60 * 60
         )
         
+        print(f"Login successful for user: {user.email}")
+        
         return {
             "user_id": user.user_id,
             "email": user.email,
@@ -171,6 +194,8 @@ async def firebase_login(request: FirebaseLoginRequest, response: Response):
         raise
     except Exception as e:
         print(f"Firebase login error: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
 
 @firebase_auth_router.get("/me")
