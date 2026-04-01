@@ -251,4 +251,66 @@ async def get_notes():
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
 
+@app.put("/api/notes/{note_id}")
+async def update_note(note_id: str, request: Request):
+    try:
+        data = await request.json()
+        title = data.get('title', '')
+        content = data.get('content', '')
+        
+        if users_collection is not None:
+            notes_collection = db.notes
+            result = notes_collection.update_one(
+                {"note_id": note_id},
+                {"$set": {"title": title, "content": content, "updated_at": datetime.now()}}
+            )
+            if result.modified_count > 0:
+                return {"success": True, "message": "Note updated"}
+            else:
+                raise HTTPException(status_code=404, detail="Note not found")
+        else:
+            # Fallback - just return success
+            return {"success": True, "message": "Note updated (mock)"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+@app.delete("/api/notes/{note_id}")
+async def delete_note(note_id: str):
+    try:
+        if users_collection is not None:
+            notes_collection = db.notes
+            result = notes_collection.delete_one({"note_id": note_id})
+            if result.deleted_count > 0:
+                return {"success": True, "message": "Note deleted"}
+            else:
+                raise HTTPException(status_code=404, detail="Note not found")
+        else:
+            # Fallback - just return success
+            return {"success": True, "message": "Note deleted (mock)"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+@app.get("/api/notes/{note_id}")
+async def get_note(note_id: str):
+    try:
+        if users_collection is not None:
+            notes_collection = db.notes
+            note = notes_collection.find_one({"note_id": note_id})
+            if note:
+                note["_id"] = str(note["_id"])
+                return {"note": note}
+            else:
+                raise HTTPException(status_code=404, detail="Note not found")
+        else:
+            # Fallback - return mock note
+            return {"note": {"note_id": note_id, "title": "Mock Note", "content": "Mock content"}}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
 handler = app
