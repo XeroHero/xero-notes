@@ -355,6 +355,64 @@ async def get_note(note_id: str):
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
 
+@app.post("/api/notes/{note_id}/share")
+async def share_note(note_id: str):
+    try:
+        if users_collection is not None:
+            notes_collection = db.notes
+            
+            # Check if note exists
+            note = notes_collection.find_one({"note_id": note_id})
+            if not note:
+                raise HTTPException(status_code=404, detail="Note not found")
+            
+            # Generate unique share link
+            share_link = f"{uuid.uuid4().hex[:12]}"
+            
+            # Update note with share information
+            result = notes_collection.update_one(
+                {"note_id": note_id},
+                {
+                    "$set": {
+                        "is_shared": True,
+                        "share_link": share_link,
+                        "updated_at": datetime.now()
+                    }
+                }
+            )
+            
+            if result.modified_count > 0:
+                return {"share_link": share_link}
+            else:
+                raise HTTPException(status_code=500, detail="Failed to share note")
+        else:
+            # Fallback - return mock share link
+            share_link = f"{uuid.uuid4().hex[:12]}"
+            return {"share_link": share_link}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+@app.get("/api/shared/{share_link}")
+async def get_shared_note(share_link: str):
+    try:
+        if users_collection is not None:
+            notes_collection = db.notes
+            note = notes_collection.find_one({"share_link": share_link, "is_shared": True})
+            if note:
+                note["_id"] = str(note["_id"])
+                return {"note": note}
+            else:
+                raise HTTPException(status_code=404, detail="Shared note not found")
+        else:
+            # Fallback - return mock shared note
+            return {"note": {"note_id": "mock", "title": "Mock Shared Note", "content": "Mock shared content"}}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
 # Folders endpoints
 @app.get("/api/folders")
 async def get_folders():
