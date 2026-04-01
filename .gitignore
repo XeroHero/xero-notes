@@ -5,6 +5,9 @@ node_modules/*
 .env
 app/backend/.env
 
+# Firebase Admin credentials
+app/backend/firebase-admin.json
+
 # Virtual environment
 venv/
 

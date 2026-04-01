@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { auth } from "../lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 const API = "/api";  // Use relative URL to call same-domain backend
 
@@ -9,51 +11,20 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const checkAuth = useCallback(async () => {
-    // Check for session_id in URL hash first
+    // Check for session_id in URL hash first (Emergent OAuth flow)
     if (window.location.hash?.includes("session_id=")) {
       setLoading(false);
       return false;
     }
 
-    // Check localStorage for user data (from simplified login)
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        setUser(userData);
-        setLoading(false);
-        return true;
-      } catch (error) {
-        console.error("Error parsing stored user data:", error);
-        localStorage.removeItem("user");
-      }
-    }
-
-    // Fall back to API check
-    try {
-      const response = await fetch(`${API}/auth/me`, {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        setUser(null);
-        setLoading(false);
-        return false;
-      }
-
-      const userData = await response.json();
-      setUser(userData);
-      setLoading(false);
-      return true;
-    } catch (error) {
-      setUser(null);
-      setLoading(false);
-      return false;
-    }
-  }, []);
+    // Firebase auth state listener will handle this
+    setLoading(false);
+    return !!user;
+  }, [user]);
 
   const logout = useCallback(async () => {
     try {
+      // Logout from Firebase
       await fetch(`${API}/auth/logout`, {
         method: "POST",
         credentials: "include",
@@ -61,8 +32,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error("Logout error:", error);
     }
-    // Clear localStorage and state
-    localStorage.removeItem("user");
+    // Clear state
     setUser(null);
   }, []);
 
@@ -71,9 +41,57 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  const loginWithToken = useCallback(async (idToken, firebaseUser) => {
+    try {
+      const response = await fetch(`${API}/auth/firebase-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ idToken, firebaseUser }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Backend login failed");
+      }
+
+      const userData = await response.json();
+      setUser(userData);
+      setLoading(false);
+      return userData;
+    } catch (error) {
+      console.error("Login with token error:", error);
+      setLoading(false);
+      throw error;
+    }
+  }, []);
+
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    // Listen to Firebase auth state changes
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // User is signed in, get ID token and authenticate with backend
+        try {
+          const idToken = await firebaseUser.getIdToken();
+          await loginWithToken(idToken, {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+          });
+        } catch (error) {
+          console.error("Auth state change error:", error);
+          setUser(null);
+          setLoading(false);
+        }
+      } else {
+        // User is signed out
+        setUser(null);
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [loginWithToken]);
 
   return (
     <AuthContext.Provider value={{ user, loading, checkAuth, logout, setUserData }}>

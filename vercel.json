@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/app-mongo.py",
+      "src": "app/backend/server.py",
       "use": "@vercel/python"
     },
     {
@@ -16,7 +16,7 @@
     { "src": "/favicon.ico", "dest": "/build/favicon.ico" },
     { "src": "/manifest.json", "dest": "/build/manifest.json" },
     { "src": "/asset-manifest.json", "dest": "/build/asset-manifest.json" },
-    { "src": "/api/(.*)", "dest": "api/app-mongo.py" },
+    { "src": "/api/(.*)", "dest": "app/backend/server.py" },
     { "src": "/(.*)", "dest": "/build/index.html" }
   ]
 }

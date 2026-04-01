@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
-import { API } from "../App";
 import Sidebar from "../components/Sidebar";
 import NoteEditor from "../components/NoteEditor";
 import { Button } from "../components/ui/button";
@@ -42,7 +41,9 @@ const Dashboard = () => {
     // Load folders from API
     const loadFolders = async () => {
       try {
-        const response = await fetch("/api/folders");
+        const response = await fetch("/api/folders", {
+          credentials: "include",
+        });
         if (response.ok) {
           const data = await response.json();
           setFolders(data.folders || []);
@@ -58,7 +59,9 @@ const Dashboard = () => {
     // Load notes from API
     const loadNotes = async () => {
       try {
-        const response = await fetch("/api/notes");
+        const response = await fetch("/api/notes", {
+          credentials: "include",
+        });
         if (response.ok) {
           const data = await response.json();
           setNotes(data.notes || []);
@@ -98,7 +101,7 @@ const Dashboard = () => {
   // Create new note
   const handleCreateNote = async () => {
     try {
-      const response = await fetch("/api/notes", {  // Use relative URL
+      const response = await fetch("/api/notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -125,7 +128,7 @@ const Dashboard = () => {
   // Update note
   const handleUpdateNote = async (noteId, data) => {
     try {
-      const response = await fetch(`${API}/notes/${noteId}`, {
+      const response = await fetch(`/api/notes/${noteId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -145,7 +148,7 @@ const Dashboard = () => {
   // Delete note
   const handleDeleteNote = async (noteId) => {
     try {
-      const response = await fetch(`${API}/notes/${noteId}`, {
+      const response = await fetch(`/api/notes/${noteId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -165,7 +168,7 @@ const Dashboard = () => {
   // Share note
   const handleShareNote = async (noteId) => {
     try {
-      const response = await fetch(`${API}/notes/${noteId}/share`, {
+      const response = await fetch(`/api/notes/${noteId}/share`, {
         method: "POST",
         credentials: "include"
       });
@@ -188,7 +191,7 @@ const Dashboard = () => {
   // Create folder
   const handleCreateFolder = async (name, color) => {
     try {
-      const response = await fetch(`${API}/folders`, {
+      const response = await fetch("/api/folders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -206,7 +209,7 @@ const Dashboard = () => {
   // Delete folder
   const handleDeleteFolder = async (folderId) => {
     try {
-      const response = await fetch(`${API}/folders/${folderId}`, {
+      const response = await fetch(`/api/folders/${folderId}`, {
         method: "DELETE",
         credentials: "include"
       });

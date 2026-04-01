@@ -1,35 +1,30 @@
 import { useState } from "react";
 import { Button } from "../components/ui/button";
-import { LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { signInWithGoogle } from "../lib/firebase";
+import { toast } from "sonner";
 
 const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { loginWithToken } = useAuth();
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
-      // Direct login without OAuth flow for now
-      const response = await fetch("/api/auth/simple-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          username: "lorenzo_mongo", 
-          password: "test123" 
-        }),
-      });
+      const { user, idToken } = await signInWithGoogle();
       
-      if (response.ok) {
-        const userData = await response.json();
-        // Store user data and redirect to dashboard
-        localStorage.setItem("user", JSON.stringify(userData));
-        navigate("/dashboard");  // Use React Router instead
-      } else {
-        throw new Error("Login failed");
-      }
+      // Send token to backend for session creation
+      await loginWithToken(idToken, user);
+      
+      toast.success("Welcome back!");
+      navigate("/dashboard");
     } catch (error) {
       console.error("Google login error:", error);
+      toast.error(error.code === "auth/popup-closed-by-user" 
+        ? "Sign-in cancelled" 
+        : "Failed to sign in with Google");
       setIsLoading(false);
     }
   };
