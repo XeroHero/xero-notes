@@ -28,20 +28,21 @@ if firebase_admin_json:
         # Try to parse as JSON string
         firebase_config = json.loads(firebase_admin_json)
         cred = credentials.Certificate(firebase_config)
-        print("Firebase Admin SDK initialized from environment variable")
+        firebase_app = firebase_admin.initialize_app(cred)
+        print("✅ Firebase Admin SDK initialized from environment variable")
     except json.JSONDecodeError as e:
-        print(f"Failed to parse FIREBASE_ADMIN_JSON: {e}")
-        # Try treating it as a file path
-        try:
-            cred = credentials.Certificate(firebase_admin_json)
-            print("Firebase Admin SDK initialized from file path")
-        except Exception as file_error:
-            print(f"Also failed to load as file: {file_error}")
-            raise
+        print(f"❌ Failed to parse FIREBASE_ADMIN_JSON as JSON: {e}")
+        print(f"First 100 chars: {firebase_admin_json[:100]}")
+        raise
+    except Exception as e:
+        print(f"❌ Firebase initialization error: {e}")
+        raise
 else:
     # Use file (local development)
+    print("⚠️ FIREBASE_ADMIN_JSON not set, using local file")
     cred = credentials.Certificate(ROOT_DIR / 'firebase-admin.json')
-    print("Firebase Admin SDK initialized from local file")
+    firebase_app = firebase_admin.initialize_app(cred)
+    print("✅ Firebase Admin SDK initialized from local file")
 
 try:
     firebase_app = firebase_admin.initialize_app(cred)
