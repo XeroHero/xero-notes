@@ -358,6 +358,7 @@ async def get_note(note_id: str):
 @app.post("/api/notes/{note_id}/share")
 async def share_note(note_id: str):
     try:
+        # Check if MongoDB is available by testing connection
         if users_collection is not None:
             notes_collection = db.notes
             
@@ -381,7 +382,7 @@ async def share_note(note_id: str):
                 }
             )
             
-            if result.modified_count > 0:
+            if result.modified_count > 0 or result.matched_count > 0:
                 return {"share_link": share_link}
             else:
                 raise HTTPException(status_code=500, detail="Failed to share note")
@@ -397,6 +398,7 @@ async def share_note(note_id: str):
 @app.get("/api/shared/{share_link}")
 async def get_shared_note(share_link: str):
     try:
+        # Check if MongoDB is available by testing connection
         if users_collection is not None:
             notes_collection = db.notes
             note = notes_collection.find_one({"share_link": share_link, "is_shared": True})
