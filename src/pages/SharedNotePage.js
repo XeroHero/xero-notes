@@ -113,7 +113,9 @@ const SharedNotePage = () => {
 
           <div
             className="prose prose-stone max-w-none font-body leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: note.content }}
+            dangerouslySetInnerHTML={{ 
+              __html: note.content.replace(/\n/g, '<br />') 
+            }}
           />
         </article>
       </main>

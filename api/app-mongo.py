@@ -402,12 +402,21 @@ async def get_shared_note(share_link: str):
             note = notes_collection.find_one({"share_link": share_link, "is_shared": True})
             if note:
                 note["_id"] = str(note["_id"])
-                return {"note": note}
+                
+                # Get author information (mock for now since we don't have user details in this simple setup)
+                author = {
+                    "name": "Xero Notes User",
+                    "picture": None
+                }
+                
+                return {"note": note, "author": author}
             else:
                 raise HTTPException(status_code=404, detail="Shared note not found")
         else:
             # Fallback - return mock shared note
-            return {"note": {"note_id": "mock", "title": "Mock Shared Note", "content": "Mock shared content"}}
+            note = {"note_id": "mock", "title": "Mock Shared Note", "content": "Mock shared content"}
+            author = {"name": "Xero Notes User", "picture": None}
+            return {"note": note, "author": author}
     except HTTPException:
         raise
     except Exception as e:
