@@ -43,6 +43,11 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithToken = useCallback(async (idToken, firebaseUser) => {
     try {
+      console.log("🔐 loginWithToken called with:", { 
+        idToken: idToken.substring(0, 20) + "...", 
+        email: firebaseUser.email 
+      });
+      
       const response = await fetch(`${API}/auth/firebase-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -50,16 +55,34 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ idToken, firebaseUser }),
       });
 
+      console.log("📡 Backend response status:", response.status);
+
       if (!response.ok) {
-        throw new Error("Backend login failed");
+        throw new Error(`Backend login failed: ${response.status} ${response.statusText}`);
       }
 
       const userData = await response.json();
+      console.log("📋 User data received:", userData);
+      console.log("📋 User data type:", typeof userData);
+      console.log("📋 User data keys:", userData ? Object.keys(userData) : "null");
+
+      // Check if userData has any function properties that shouldn't be there
+      if (userData && typeof userData === 'object') {
+        for (const [key, value] of Object.entries(userData)) {
+          if (typeof value === 'function') {
+            console.log(`⚠️ Found function property: ${key} =`, value);
+          }
+        }
+      }
+
+      console.log("👤 Setting user state...");
       setUser(userData);
+      console.log("✅ User state set successfully");
+      
       setLoading(false);
       return userData;
     } catch (error) {
-      console.error("Login with token error:", error);
+      console.error("❌ Login with token error:", error);
       setLoading(false);
       throw error;
     }
