@@ -32,26 +32,58 @@ except Exception as e:
     client = None
     db = None
 
-# Firebase Admin SDK is initialized in firebase_auth.py
-# Use the existing app
+# Firebase Admin SDK initialization
+firebase_admin_json = os.environ.get('FIREBASE_ADMIN_JSON')
+firebase_app = None
+
+print(f"🔍 Firebase Admin SDK initialization check:")
+print(f"   FIREBASE_ADMIN_JSON exists: {bool(firebase_admin_json)}")
+if firebase_admin_json:
+    print(f"   JSON length: {len(firebase_admin_json)}")
+    print(f"   First 100 chars: {firebase_admin_json[:100]}")
+
 try:
-    firebase_app = firebase_admin.get_app()
-    print("✅ Using existing Firebase Admin SDK instance")
-except:
-    # Fallback initialization if not already initialized
-    try:
-        firebase_admin_json = os.environ.get('FIREBASE_ADMIN_JSON')
-        if firebase_admin_json:
-            import json
+    if firebase_admin_json:
+        import json
+        try:
             firebase_config = json.loads(firebase_admin_json)
+            print("✅ JSON parsing successful")
+            print(f"   Config keys: {list(firebase_config.keys())}")
+            print(f"   Project ID: {firebase_config.get('project_id', 'NOT_FOUND')}")
+            print(f"   Client email: {firebase_config.get('client_email', 'NOT_FOUND')}")
+            
             cred = credentials.Certificate(firebase_config)
+            firebase_app = firebase_admin.initialize_app(cred)
+            print("✅ Firebase Admin SDK initialized from environment variable")
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON parsing failed: {e}")
+            print(f"   First 200 chars: {firebase_admin_json[:200]}")
+        except Exception as e:
+            print(f"❌ Firebase initialization failed: {e}")
+            import traceback
+            traceback.print_exc()
+    else:
+        print("⚠️ FIREBASE_ADMIN_JSON not set")
+except Exception as e:
+    print(f"❌ Firebase initialization error: {e}")
+    try:
+        # Try to get existing app first
+        firebase_app = firebase_admin.get_app()
+        if firebase_app:
+            print("✅ Using existing Firebase app")
         else:
-            cred = credentials.Certificate(ROOT_DIR / 'firebase-admin.json')
-        firebase_app = firebase_admin.initialize_app(cred)
-        print("✅ Firebase Admin SDK initialized")
-    except Exception as e:
-        print(f"❌ Firebase Admin SDK initialization failed: {e}")
+            # If no existing app, try to initialize
+            if firebase_admin_json:
+                import json
+                firebase_config = json.loads(firebase_admin_json)
+                cred = credentials.Certificate(firebase_config)
+                firebase_app = firebase_admin.initialize_app(cred)
+                print("✅ Firebase Admin SDK initialized from environment variable")
+            else:
+                print("⚠️ No Firebase config available")
+    except:
         firebase_app = None
+        print("❌ Firebase Admin SDK not available")
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
