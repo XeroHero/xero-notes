@@ -381,6 +381,11 @@ async def test_post():
     """Test POST endpoint"""
     return {"message": "POST test works"}
 
+@app.post("/api/auth/test-post")
+async def auth_test_post():
+    """Test POST endpoint in auth router"""
+    return {"message": "Auth POST test works"}
+
 @app.get("/api/auth/test")
 async def auth_test():
     """Auth test endpoint"""
