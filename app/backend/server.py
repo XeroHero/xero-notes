@@ -19,10 +19,18 @@ from firebase_auth import firebase_auth_router
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# MongoDB connection with error handling
+try:
+    mongo_url = os.environ['MONGO_URL']
+    client = AsyncIOMotorClient(mongo_url)
+    db = client[os.environ['DB_NAME']]
+    print("✅ MongoDB connected successfully")
+except Exception as e:
+    print(f"❌ MongoDB connection failed: {e}")
+    # Set fallback values to prevent crashes
+    mongo_url = None
+    client = None
+    db = None
 
 # Firebase Admin SDK is initialized in firebase_auth.py
 # Use the existing app
@@ -31,15 +39,19 @@ try:
     print("✅ Using existing Firebase Admin SDK instance")
 except:
     # Fallback initialization if not already initialized
-    firebase_admin_json = os.environ.get('FIREBASE_ADMIN_JSON')
-    if firebase_admin_json:
-        import json
-        firebase_config = json.loads(firebase_admin_json)
-        cred = credentials.Certificate(firebase_config)
-    else:
-        cred = credentials.Certificate(ROOT_DIR / 'firebase-admin.json')
-    firebase_app = firebase_admin.initialize_app(cred)
-    print("✅ Firebase Admin SDK initialized")
+    try:
+        firebase_admin_json = os.environ.get('FIREBASE_ADMIN_JSON')
+        if firebase_admin_json:
+            import json
+            firebase_config = json.loads(firebase_admin_json)
+            cred = credentials.Certificate(firebase_config)
+        else:
+            cred = credentials.Certificate(ROOT_DIR / 'firebase-admin.json')
+        firebase_app = firebase_admin.initialize_app(cred)
+        print("✅ Firebase Admin SDK initialized")
+    except Exception as e:
+        print(f"❌ Firebase Admin SDK initialization failed: {e}")
+        firebase_app = None
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -200,7 +212,11 @@ async def simple_test():
     return {
         "status": "ok",
         "message": "Backend is working at root level",
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "services": {
+            "mongodb": "connected" if db else "disconnected",
+            "firebase": "initialized" if firebase_app else "not_initialized"
+        }
     }
 
 # Notes endpoints (secured by user)

@@ -17,6 +17,7 @@
     { "src": "/manifest.json", "dest": "/build/manifest.json" },
     { "src": "/asset-manifest.json", "dest": "/build/asset-manifest.json" },
     { "src": "/api/(.*)", "dest": "app/backend/server.py" },
+    { "src": "/test", "dest": "app/backend/server.py" },
     { "src": "/(.*)", "dest": "/build/index.html" }
   ]
 }
