@@ -206,8 +206,8 @@ async def exchange_session(data: SessionData, response: Response):
         key="session_token",
         value=session_token,
         httponly=True,
-        secure=True,
-        samesite="none",
+        secure=False,  # Changed to False for Vercel compatibility
+        samesite="lax",  # Changed to lax for better compatibility
         path="/",
         max_age=7 * 24 * 60 * 60
     )
