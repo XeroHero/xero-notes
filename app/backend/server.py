@@ -240,9 +240,15 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
     """Verify Firebase token and create session"""
     print(f"🔍 Firebase login endpoint called")
     print(f"🔍 DB is available: {db is not None}")
+    print(f"🔍 Firebase app available: {firebase_app is not None}")
+    print(f"🔍 Request body type: {type(firebase_request)}")
+    print(f"🔍 Request has idToken: {hasattr(firebase_request, 'idToken')}")
     
     if db is None:
         raise HTTPException(status_code=500, detail="Database not available")
+    
+    if firebase_app is None:
+        raise HTTPException(status_code=500, detail="Firebase not available")
     
     try:
         # Verify Firebase ID token
