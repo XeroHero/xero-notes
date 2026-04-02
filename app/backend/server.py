@@ -232,11 +232,11 @@ async def logout(request: Request, response: Response):
     return {"message": "Logged out"}
 
 @api_router.post("/auth/firebase-login")
-async def firebase_login(request: FirebaseLoginRequest, response: Response):
+async def firebase_login(firebase_request: FirebaseLoginRequest, request: Request, response: Response):
     """Verify Firebase token and create session"""
     try:
         # Verify Firebase ID token
-        decoded_token = firebase_auth.verify_id_token(request.idToken)
+        decoded_token = firebase_auth.verify_id_token(firebase_request.idToken)
         
         user_id = f"user_{decoded_token['uid'][:12]}"
         email = decoded_token.get('email', '')
