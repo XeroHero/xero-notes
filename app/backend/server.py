@@ -300,6 +300,11 @@ async def simple_test():
         }
     }
 
+@app.get("/api/health")
+async def health():
+    """Health check endpoint"""
+    return {"status": "healthy"}
+
 # Notes endpoints (secured by user)
 @api_router.post("/notes")
 async def create_note(note_data: NoteCreate, request: Request, user: User = Depends(get_current_user)):
