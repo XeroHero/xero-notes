@@ -291,6 +291,11 @@ async def health():
     """Health check endpoint"""
     return {"status": "healthy"}
 
+@app.post("/api/test-post")
+async def test_post():
+    """Test POST endpoint"""
+    return {"message": "POST test works"}
+
 # Notes endpoints (secured by user)
 @api_router.post("/notes")
 async def create_note(note_data: NoteCreate, request: Request, user: User = Depends(get_current_user)):
@@ -298,6 +303,8 @@ async def create_note(note_data: NoteCreate, request: Request, user: User = Depe
     print(f"🔍 DEBUG: POST /api/notes called")
     print(f"🔍 DEBUG: User: {user}")
     print(f"🔍 DEBUG: Note data: {note_data}")
+    print(f"🔍 DEBUG: Request method: {request.method}")
+    print(f"🔍 DEBUG: Request URL: {request.url}")
     try:
         note_doc = {
             "note_id": f"note_{uuid.uuid4().hex[:12]}",
