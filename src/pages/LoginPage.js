@@ -8,6 +8,7 @@ import AuthTest from "../components/AuthTest";
 import GoogleAuthTest from "../components/GoogleAuthTest";
 import SimpleAuthTest from "../components/SimpleAuthTest";
 import SuccessTest from "../components/SuccessTest";
+import NavigationTest from "../components/NavigationTest";
 
 const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -26,25 +27,20 @@ const LoginPage = () => {
       await loginWithToken(idToken, user);
       console.log("✅ Backend authentication successful");
       
-      // Safe toast notification
+      // Show success message
+      console.log("🎉 Authentication successful! User should now be logged in.");
+      
+      // Simple navigation without timeout
       try {
-        toast.success("Welcome back!");
-        console.log("✅ Toast notification shown");
-      } catch (toastError) {
-        console.log("⚠️ Toast notification failed, but login succeeded:", toastError);
+        navigate("/dashboard");
+        console.log("🧭 Navigating to dashboard...");
+      } catch (navError) {
+        console.error("❌ Navigation error:", navError);
+        // Fallback: reload page to trigger auth state
+        window.location.href = "/dashboard";
       }
       
-      // Safe navigation with timeout
-      setTimeout(() => {
-        try {
-          navigate("/dashboard");
-          console.log("🧭 Navigation to dashboard successful");
-        } catch (navError) {
-          console.log("⚠️ Navigation failed, but login succeeded:", navError);
-        }
-      }, 100);
-      
-      console.log("🏁 Login process completed successfully");
+      console.log("🏁 Login process completed");
       
     } catch (error) {
       console.error("❌ Google login error:", error);
@@ -106,6 +102,9 @@ const LoginPage = () => {
             
             {/* Success Handler Test */}
             <SuccessTest />
+            
+            {/* Navigation Test */}
+            <NavigationTest />
             
             <div className="space-y-6">
               <div className="text-center">
