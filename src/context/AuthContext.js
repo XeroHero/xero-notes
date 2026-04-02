@@ -50,14 +50,22 @@ export const AuthProvider = ({ children }) => {
       
       const response = await fetch(`${API}/auth/firebase-login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         credentials: "include",
         body: JSON.stringify({ idToken, firebaseUser }),
       });
 
       console.log("📡 Backend response status:", response.status);
+      console.log("📡 Backend response headers:", Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.log("❌ Backend error response:", errorText);
+        console.log("❌ Response status:", response.status);
+        console.log("❌ Response headers:", Object.fromEntries(response.headers.entries()));
         throw new Error(`Backend login failed: ${response.status} ${response.statusText}`);
       }
 
