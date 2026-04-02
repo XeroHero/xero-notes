@@ -21,32 +21,29 @@ db = client[os.environ['DB_NAME']]
 
 # Firebase Admin SDK initialization
 firebase_admin_json = os.environ.get('FIREBASE_ADMIN_JSON')
-if firebase_admin_json:
-    # Use environment variable (Vercel deployment)
-    import json
-    try:
-        # Try to parse as JSON string
-        firebase_config = json.loads(firebase_admin_json)
-        cred = credentials.Certificate(firebase_config)
-        firebase_app = firebase_admin.initialize_app(cred)
-        print("✅ Firebase Admin SDK initialized from environment variable")
-    except json.JSONDecodeError as e:
-        print(f"❌ Failed to parse FIREBASE_ADMIN_JSON as JSON: {e}")
-        print(f"First 100 chars: {firebase_admin_json[:100]}")
-        raise
-    except Exception as e:
-        print(f"❌ Firebase initialization error: {e}")
-        raise
-else:
-    # Use file (local development)
-    print("⚠️ FIREBASE_ADMIN_JSON not set, using local file")
-    cred = credentials.Certificate(ROOT_DIR / 'firebase-admin.json')
-    firebase_app = firebase_admin.initialize_app(cred)
-    print("✅ Firebase Admin SDK initialized from local file")
-
 try:
-    firebase_app = firebase_admin.initialize_app(cred)
-    print("Firebase Admin SDK initialized successfully")
+    if firebase_admin_json:
+        # Use environment variable (Vercel deployment)
+        import json
+        try:
+            # Try to parse as JSON string
+            firebase_config = json.loads(firebase_admin_json)
+            cred = credentials.Certificate(firebase_config)
+            firebase_app = firebase_admin.initialize_app(cred)
+            print("✅ Firebase Admin SDK initialized from environment variable")
+        except json.JSONDecodeError as e:
+            print(f"❌ Failed to parse FIREBASE_ADMIN_JSON as JSON: {e}")
+            print(f"First 100 chars: {firebase_admin_json[:100]}")
+            raise
+        except Exception as e:
+            print(f"❌ Firebase initialization error: {e}")
+            raise
+    else:
+        # Use file (local development)
+        print("⚠️ FIREBASE_ADMIN_JSON not set, using local file")
+        cred = credentials.Certificate(ROOT_DIR / 'firebase-admin.json')
+        firebase_app = firebase_admin.initialize_app(cred)
+        print("✅ Firebase Admin SDK initialized from local file")
 except Exception as e:
     print(f"Firebase initialization error: {e}")
     # Create a default app if one already exists
@@ -55,6 +52,7 @@ except Exception as e:
         print("Using existing Firebase app")
     except:
         firebase_app = None
+        print("❌ Firebase Admin SDK not available")
 
 # Firebase auth router
 firebase_auth_router = APIRouter(prefix="/api/auth")

@@ -24,24 +24,22 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Firebase Admin SDK initialization
-firebase_admin_json = os.environ.get('FIREBASE_ADMIN_JSON')
-if firebase_admin_json:
-    import json
-    firebase_config = json.loads(firebase_admin_json)
-    cred = credentials.Certificate(firebase_config)
-else:
-    cred = credentials.Certificate(ROOT_DIR / 'firebase-admin.json')
-
+# Firebase Admin SDK is initialized in firebase_auth.py
+# Use the existing app
 try:
+    firebase_app = firebase_admin.get_app()
+    print("✅ Using existing Firebase Admin SDK instance")
+except:
+    # Fallback initialization if not already initialized
+    firebase_admin_json = os.environ.get('FIREBASE_ADMIN_JSON')
+    if firebase_admin_json:
+        import json
+        firebase_config = json.loads(firebase_admin_json)
+        cred = credentials.Certificate(firebase_config)
+    else:
+        cred = credentials.Certificate(ROOT_DIR / 'firebase-admin.json')
     firebase_app = firebase_admin.initialize_app(cred)
-    print("Firebase Admin SDK initialized successfully")
-except Exception as e:
-    print(f"Firebase initialization error: {e}")
-    try:
-        firebase_app = firebase_admin.get_app()
-    except:
-        firebase_app = None
+    print("✅ Firebase Admin SDK initialized")
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
