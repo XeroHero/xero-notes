@@ -227,6 +227,64 @@ async def logout(request: Request, response: Response):
     response.delete_cookie(key="session_token", path="/", samesite="none", secure=True)
     return {"message": "Logged out"}
 
+@api_router.post("/auth/firebase-login")
+async def firebase_login(request: FirebaseLoginRequest, response: Response):
+    """Verify Firebase token and create session"""
+    try:
+        # Verify Firebase ID token
+        decoded_token = firebase_auth.verify_id_token(request.idToken)
+        
+        user_id = f"user_{decoded_token['uid'][:12]}"
+        email = decoded_token.get('email', '')
+        name = decoded_token.get('name', '')
+        picture = decoded_token.get('picture', '')
+        
+        # Create or update user in database
+        user_doc = {
+            "user_id": user_id,
+            "email": email,
+            "name": name,
+            "picture": picture,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.users.update_one(
+            {"user_id": user_id},
+            {"$set": user_doc},
+            upsert=True
+        )
+        
+        # Create session token
+        session_token = f"session_{uuid.uuid4().hex[:12]}"
+        expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+        
+        session_doc = {
+            "session_token": session_token,
+            "user_id": user_id,
+            "expires_at": expires_at.isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.user_sessions.delete_many({"user_id": user_id})
+        await db.user_sessions.insert_one(session_doc)
+        
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            secure=False,  # Changed to False for Vercel compatibility
+            samesite="lax",  # Changed to lax for better compatibility
+            path="/",
+            max_age=7 * 24 * 60 * 60
+        )
+        
+        user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+        return user_doc
+        
+    except Exception as e:
+        logger.error(f"Firebase login error: {e}")
+        raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
+
 @app.get("/api/me")
 async def get_current_user():
     """Get current authenticated user (for session verification)"""
