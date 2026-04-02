@@ -5,8 +5,32 @@ import os
 import firebase_admin
 from firebase_admin import credentials, auth as firebase_auth
 import uuid
+from typing import Optional
 
 app = FastAPI()
+
+# Models
+class Note(BaseModel):
+    title: str
+    content: str = ""
+
+class Folder(BaseModel):
+    name: str
+    color: str = "#E06A4F"
+    created_at: str = ""
+    updated_at: str = ""
+
+class User(BaseModel):
+    user_id: str
+    email: str
+    name: Optional[str] = None
+    picture: Optional[str] = None
+    created_at: str
+
+# Mock data storage (since we don't have MongoDB in minimal server)
+mock_users = {}
+mock_folders = {}
+mock_notes = {}
 
 # Firebase Admin SDK initialization
 firebase_admin_json = os.environ.get('FIREBASE_ADMIN_JSON')
@@ -134,20 +158,22 @@ async def firebase_login(request: FirebaseLoginRequest):
                 "details": f"Token UID: {decoded_token.get('uid')}, User UID: {request.firebaseUser.uid}"
             }
         
-        print(f"✅ Login successful for user: {request.firebaseUser.email}")
-        
-        return {
-            "user_id": f"user_{uuid.uuid4().hex[:12]}",
+        # Create or get user data
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        user_data = {
+            "user_id": user_id,
             "email": request.firebaseUser.email,
             "name": request.firebaseUser.displayName,
             "picture": request.firebaseUser.photoURL,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "debug": {
-                "token_uid": decoded_token.get('uid'),
-                "user_uid": request.firebaseUser.uid,
-                "firebase_initialized": firebase_app is not None
-            }
+            "created_at": datetime.now(timezone.utc).isoformat()
         }
+        
+        # Store in mock database
+        mock_users[user_id] = user_data
+        
+        print(f"✅ Login successful for user: {request.firebaseUser.email}")
+        
+        return user_data
         
     except Exception as e:
         print(f"❌ Firebase login error: {e}")
@@ -158,5 +184,22 @@ async def firebase_login(request: FirebaseLoginRequest):
             "details": str(e),
             "traceback": traceback.format_exc()
         }
+
+# Add missing endpoints for dashboard
+@app.get("/api/folders")
+async def get_folders():
+    """Get all folders for the authenticated user"""
+    return {
+        "folders": list(mock_folders.values()),
+        "message": "Mock folders endpoint working"
+    }
+
+@app.get("/api/notes")
+async def get_notes():
+    """Get all notes for the authenticated user"""
+    return {
+        "notes": list(mock_notes.values()),
+        "message": "Mock notes endpoint working"
+    }
 
 print("✅ Minimal server with Firebase auth loaded successfully")
