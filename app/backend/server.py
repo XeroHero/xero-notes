@@ -295,6 +295,9 @@ async def health():
 @api_router.post("/notes")
 async def create_note(note_data: NoteCreate, request: Request, user: User = Depends(get_current_user)):
     """Create a new note for the authenticated user"""
+    print(f"🔍 DEBUG: POST /api/notes called")
+    print(f"🔍 DEBUG: User: {user}")
+    print(f"🔍 DEBUG: Note data: {note_data}")
     try:
         note_doc = {
             "note_id": f"note_{uuid.uuid4().hex[:12]}",
