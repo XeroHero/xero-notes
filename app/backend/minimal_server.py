@@ -185,6 +185,16 @@ async def firebase_login(request: FirebaseLoginRequest):
             "traceback": traceback.format_exc()
         }
 
+@app.get("/api/me")
+async def get_current_user():
+    """Get current authenticated user (for session verification)"""
+    return {
+        "user_id": "test_user_123",
+        "email": "test@example.com", 
+        "name": "Test User",
+        "message": "Mock user endpoint working"
+    }
+
 # Add missing endpoints for dashboard
 @app.get("/api/folders")
 async def get_folders():

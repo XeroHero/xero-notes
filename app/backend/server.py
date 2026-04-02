@@ -187,6 +187,20 @@ async def exchange_session(data: SessionData, response: Response):
 async def get_me(user: User = Depends(get_current_user)):
     return user.model_dump()
 
+# Folders endpoints
+@api_router.get("/folders")
+async def get_folders(user: User = Depends(get_current_user)):
+    """Get all folders for the authenticated user"""
+    folders = await db.folders.find({"user_id": user.user_id})
+    return {"folders": folders}
+
+# Notes endpoints  
+@api_router.get("/notes")
+async def get_notes(user: User = Depends(get_current_user)):
+    """Get all notes for the authenticated user"""
+    notes = await db.notes.find({"user_id": user.user_id})
+    return {"notes": notes}
+
 @api_router.post("/auth/logout")
 async def logout(request: Request, response: Response):
     session_token = request.cookies.get("session_token")
@@ -195,10 +209,45 @@ async def logout(request: Request, response: Response):
     response.delete_cookie(key="session_token", path="/", samesite="none", secure=True)
     return {"message": "Logged out"}
 
-# Health check
-@api_router.get("/health")
-async def health():
-    return {"status": "healthy"}
+@app.get("/api/me")
+async def get_current_user():
+    """Get current authenticated user (for session verification)"""
+    session_token = request.cookies.get("session_token")
+    
+    if not session_token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            session_token = auth_header.split(" ")[1]
+    
+    if not session_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Get session from database
+    session_doc = await db.user_sessions.find_one({"session_token": session_token}, {"_id": 0})
+    
+    if not session_doc:
+        raise HTTPException(status_code=401, detail="Invalid session")
+    
+    # Check if session is expired
+    expires_at = session_doc.get("expires_at")
+    if expires_at:
+        if isinstance(expires_at, str):
+            expires_at = datetime.fromisoformat(expires_at)
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at < datetime.now(timezone.utc):
+            raise HTTPException(status_code=401, detail="Session expired")
+    
+    # Get user from database
+    user_doc = await db.users.find_one({"user_id": session_doc["user_id"]}, {"_id": 0})
+    
+    if not user_doc:
+        raise HTTPException(status_code=401, detail="User not found")
+    
+    # Remove sensitive fields
+    user_doc.pop("firebase_uid", None)
+    
+    return user_doc
 
 # Root route
 @app.get("/")
