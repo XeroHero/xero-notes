@@ -360,8 +360,8 @@ async def simple_test():
             "message": "Backend is working at root level",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "services": {
-                "mongodb": "connected" if db else "disconnected",
-                "firebase": "initialized" if firebase_app else "not_initialized",
+                "mongodb": "connected" if db is not None else "disconnected",
+                "firebase": "initialized" if firebase_app is not None else "not_initialized",
                 "env_vars": {
                     "MONGO_URL_set": bool(os.environ.get('MONGO_URL')),
                     "DB_NAME_set": bool(os.environ.get('DB_NAME')),
