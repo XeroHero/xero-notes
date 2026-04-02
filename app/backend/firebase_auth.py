@@ -21,14 +21,6 @@ db = client[os.environ['DB_NAME']]
 
 # Firebase Admin SDK initialization
 firebase_admin_json = os.environ.get('FIREBASE_ADMIN_JSON')
-print(f"🔍 FIREBASE_ADMIN_JSON environment variable check:")
-print(f"   Exists: {bool(firebase_admin_json)}")
-print(f"   Length: {len(firebase_admin_json) if firebase_admin_json else 0}")
-if firebase_admin_json:
-    print(f"   First 100 chars: {firebase_admin_json[:100]}")
-else:
-    print("   ❌ FIREBASE_ADMIN_JSON not set in environment variables")
-
 try:
     if firebase_admin_json:
         # Use environment variable (Vercel deployment)
@@ -53,17 +45,27 @@ try:
         firebase_app = firebase_admin.initialize_app(cred)
         print("✅ Firebase Admin SDK initialized from local file")
 except Exception as e:
-    print(f"❌ Firebase initialization error: {e}")
+    print(f"Firebase initialization error: {e}")
     # Create a default app if one already exists
     try:
         firebase_app = firebase_admin.get_app()
-        print("✅ Using existing Firebase app")
+        print("Using existing Firebase app")
     except:
         firebase_app = None
-        print("❌ Firebase Admin SDK not available - authentication will fail")
+        print("❌ Firebase Admin SDK not available")
 
 # Firebase auth router
 firebase_auth_router = APIRouter(prefix="/api/auth")
+
+# Simple test endpoint (no auth required)
+@firebase_auth_router.get("/test")
+async def test_endpoint():
+    """Test endpoint to verify backend is accessible"""
+    return {
+        "status": "ok",
+        "message": "Backend is working",
+        "firebase_available": firebase_app is not None
+    }
 
 # Models
 class FirebaseUser(BaseModel):
@@ -141,55 +143,40 @@ async def get_or_create_user(firebase_user: FirebaseUser) -> User:
 async def firebase_login(request: FirebaseLoginRequest, response: Response):
     """Verify Firebase token and create session"""
     try:
-        print(f"🔐 Firebase login attempt for user: {request.firebaseUser.email}")
-        print(f"   Firebase App available: {firebase_app is not None}")
-        
-        if not firebase_app:
-            print("❌ Firebase Admin SDK not initialized - cannot verify tokens")
-            raise HTTPException(status_code=500, detail="Firebase Admin SDK not properly initialized")
+        print(f"Firebase login attempt for user: {request.firebaseUser.email}")
         
         # Verify the Firebase token
         try:
             decoded_token = await verify_firebase_token(request.idToken)
-            print(f"✅ Token verified successfully: {decoded_token.get('uid')}")
+            print(f"Token verified successfully: {decoded_token.get('uid')}")
         except Exception as token_error:
-            print(f"❌ Token verification failed: {token_error}")
+            print(f"Token verification failed: {token_error}")
             raise HTTPException(status_code=401, detail=f"Token verification failed: {str(token_error)}")
         
         # Ensure the token UID matches the provided user UID
         if decoded_token.get('uid') != request.firebaseUser.uid:
-            print(f"❌ Token UID mismatch: {decoded_token.get('uid')} != {request.firebaseUser.uid}")
             raise HTTPException(status_code=401, detail="Token UID mismatch")
         
         # Get or create user in database
-        try:
-            user = await get_or_create_user(request.firebaseUser)
-            print(f"✅ User retrieved/created: {user.user_id}")
-        except Exception as db_error:
-            print(f"❌ Database error: {db_error}")
-            raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
+        user = await get_or_create_user(request.firebaseUser)
+        print(f"User retrieved/created: {user.user_id}")
         
         # Create session token
         session_token = f"session_{uuid.uuid4().hex[:24]}"
         expires_at = datetime.now(timezone.utc) + timedelta(days=7)
         
         # Store session in MongoDB
-        try:
-            session_doc = {
-                "user_id": user.user_id,
-                "firebase_uid": request.firebaseUser.uid,
-                "session_token": session_token,
-                "expires_at": expires_at.isoformat(),
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            
-            # Remove old sessions for this user
-            await db.user_sessions.delete_many({"user_id": user.user_id})
-            await db.user_sessions.insert_one(session_doc)
-            print(f"✅ Session created: {session_token[:16]}...")
-        except Exception as session_error:
-            print(f"❌ Session creation error: {session_error}")
-            raise HTTPException(status_code=500, detail=f"Session creation failed: {str(session_error)}")
+        session_doc = {
+            "user_id": user.user_id,
+            "firebase_uid": request.firebaseUser.uid,
+            "session_token": session_token,
+            "expires_at": expires_at.isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Remove old sessions for this user
+        await db.user_sessions.delete_many({"user_id": user.user_id})
+        await db.user_sessions.insert_one(session_doc)
         
         # Set session cookie
         response.set_cookie(
@@ -202,7 +189,7 @@ async def firebase_login(request: FirebaseLoginRequest, response: Response):
             max_age=7 * 24 * 60 * 60
         )
         
-        print(f"✅ Login successful for user: {user.email}")
+        print(f"Login successful for user: {user.email}")
         
         return {
             "user_id": user.user_id,
@@ -215,7 +202,7 @@ async def firebase_login(request: FirebaseLoginRequest, response: Response):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Firebase login error: {e}")
+        print(f"Firebase login error: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")

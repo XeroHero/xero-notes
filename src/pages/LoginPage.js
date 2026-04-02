@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { signInWithGoogle } from "../lib/firebase";
 import { toast } from "sonner";
+import AuthTest from "../components/AuthTest";
 
 const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -65,6 +66,9 @@ const LoginPage = () => {
             className="bg-white/80 backdrop-blur-xl rounded-2xl p-8 shadow-xl border border-[#E7E5E4]"
             data-testid="login-card"
           >
+            {/* Backend Test */}
+            <AuthTest />
+            
             <div className="space-y-6">
               <div className="text-center">
                 <h2 className="font-heading text-xl font-medium text-[#1C1917] mb-2">
