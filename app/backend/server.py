@@ -103,6 +103,10 @@ class User(BaseModel):
 class SessionData(BaseModel):
     session_id: str
 
+class FirebaseLoginRequest(BaseModel):
+    idToken: str
+    firebaseUser: Optional[dict] = None
+
 class FolderCreate(BaseModel):
     name: str
     color: Optional[str] = "#E06A4F"
