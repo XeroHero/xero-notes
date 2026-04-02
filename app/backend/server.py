@@ -14,7 +14,7 @@ import firebase_admin
 from firebase_admin import credentials, auth as firebase_auth
 
 # Import auth routers
-from app.backend.firebase_auth import firebase_auth_router
+# from app.backend.firebase_auth import firebase_auth_router  # Commented out to prevent conflicts
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -489,7 +489,7 @@ async def delete_folder(folder_id: str, user: User = Depends(get_current_user)):
 
 # Include routers
 app.include_router(api_router)
-app.include_router(firebase_auth_router)
+# app.include_router(firebase_auth_router)  # Commented out to prevent conflicts
 
 # CORS middleware
 app.add_middleware(
