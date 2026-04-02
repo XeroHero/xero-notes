@@ -86,11 +86,15 @@ except Exception as e:
         print("❌ Firebase Admin SDK not available")
 
 app = FastAPI()
+print("🚀 FastAPI app created")
+
 api_router = APIRouter(prefix="/api")
+print("🚀 API router created")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+print("🚀 Logging configured")
 
 # Models
 class User(BaseModel):
@@ -383,8 +387,14 @@ async def auth_test():
     return {
         "status": "ok",
         "message": "Auth test working",
-        "firebase_available": firebase_app is not None
+        "firebase_available": firebase_app is not None,
+        "db_available": db is not None
     }
+
+@app.get("/api/simple-test")
+async def simple_test():
+    """Simple test endpoint to check if server is working"""
+    return {"status": "ok", "message": "Server is working"}
 
 # Notes endpoints (secured by user)
 @api_router.post("/notes")
