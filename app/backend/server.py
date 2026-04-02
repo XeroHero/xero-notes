@@ -399,14 +399,21 @@ async def debug_all_methods(request: Request):
 @app.post("/api/simple-post")
 async def simple_post():
     """Simple POST endpoint with no dependencies"""
+    print("🔍 Simple POST endpoint called")
     return {"status": "ok", "method": "POST", "message": "Simple POST works"}
 
 @app.post("/api/auth/test-post")
 async def auth_test_post(request: Request):
     """Test POST endpoint in auth router"""
-    print(f"🔍 POST /api/auth/test-post called")
+    print("🔍 Auth POST endpoint called")
     print(f"🔍 Request method: {request.method}")
     return {"message": "Auth POST test works"}
+
+@app.post("/api/test-post")
+async def test_post():
+    """Test POST endpoint"""
+    print("🔍 Test POST endpoint called")
+    return {"message": "POST test works"}
 
 @app.get("/api/auth/test")
 async def auth_test():
