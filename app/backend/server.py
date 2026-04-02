@@ -376,14 +376,24 @@ async def health():
     """Health check endpoint"""
     return {"status": "healthy"}
 
+@app.options("/api/test-post")
+async def test_post_options():
+    """Handle OPTIONS preflight request"""
+    return {"message": "OPTIONS allowed"}
+
 @app.post("/api/test-post")
-async def test_post():
+async def test_post(request: Request):
     """Test POST endpoint"""
+    print(f"🔍 POST /api/test-post called")
+    print(f"🔍 Request method: {request.method}")
+    print(f"🔍 Request headers: {dict(request.headers)}")
     return {"message": "POST test works"}
 
 @app.post("/api/auth/test-post")
-async def auth_test_post():
+async def auth_test_post(request: Request):
     """Test POST endpoint in auth router"""
+    print(f"🔍 POST /api/auth/test-post called")
+    print(f"🔍 Request method: {request.method}")
     return {"message": "Auth POST test works"}
 
 @app.get("/api/auth/test")
