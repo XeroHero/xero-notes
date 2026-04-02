@@ -68,30 +68,41 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Listen to Firebase auth state changes
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("🔥 Firebase auth state changed:", firebaseUser?.email || "null");
+      
       if (firebaseUser) {
         // User is signed in, get ID token and authenticate with backend
         try {
           const idToken = await firebaseUser.getIdToken();
-          await loginWithToken(idToken, {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL,
-          });
+          console.log("🔐 Got ID token, attempting backend login...");
+          
+          // Only login if we're not already in the process of logging in
+          if (!user || user.email !== firebaseUser.email) {
+            await loginWithToken(idToken, {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+            });
+            console.log("✅ Backend login completed via auth state listener");
+          } else {
+            console.log("ℹ️ User already logged in, skipping duplicate login");
+          }
         } catch (error) {
-          console.error("Auth state change error:", error);
+          console.error("❌ Auth state change error:", error);
           setUser(null);
           setLoading(false);
         }
       } else {
         // User is signed out
+        console.log("👋 User signed out");
         setUser(null);
         setLoading(false);
       }
     });
 
     return () => unsubscribe();
-  }, [loginWithToken]);
+  }, [loginWithToken, user]);
 
   return (
     <AuthContext.Provider value={{ user, loading, checkAuth, logout, setUserData }}>

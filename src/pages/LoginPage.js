@@ -17,18 +17,39 @@ const LoginPage = () => {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
+      console.log("🔥 Starting Google login process...");
       const { user, idToken } = await signInWithGoogle();
+      console.log("✅ Google sign-in successful:", user.email);
       
       // Send token to backend for session creation
+      console.log("🔐 Sending token to backend...");
       await loginWithToken(idToken, user);
+      console.log("✅ Backend authentication successful");
       
-      toast.success("Welcome back!");
+      // Use setTimeout to avoid any potential toast issues
+      setTimeout(() => {
+        try {
+          toast.success("Welcome back!");
+          console.log("✅ Toast notification shown");
+        } catch (toastError) {
+          console.log("⚠️ Toast notification failed, but login succeeded:", toastError);
+        }
+      }, 100);
+      
+      // Navigate to dashboard
+      console.log("🧭 Navigating to dashboard...");
       navigate("/dashboard");
+      console.log("🏁 Login process completed successfully");
+      
     } catch (error) {
-      console.error("Google login error:", error);
-      toast.error(error.code === "auth/popup-closed-by-user" 
-        ? "Sign-in cancelled" 
-        : "Failed to sign in with Google");
+      console.error("❌ Google login error:", error);
+      try {
+        toast.error(error.code === "auth/popup-closed-by-user" 
+          ? "Sign-in cancelled" 
+          : "Failed to sign in with Google");
+      } catch (toastError) {
+        console.log("⚠️ Error toast failed:", toastError);
+      }
       setIsLoading(false);
     }
   };
