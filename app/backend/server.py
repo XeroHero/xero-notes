@@ -396,6 +396,11 @@ async def simple_test():
     """Simple test endpoint to check if server is working"""
     return {"status": "ok", "message": "Server is working"}
 
+@api_router.get("/auth/router-test")
+async def router_test():
+    """Test if the auth router is working"""
+    return {"status": "ok", "message": "Auth router is working"}
+
 # Notes endpoints (secured by user)
 @api_router.post("/notes")
 async def create_note(note_data: NoteCreate, request: Request, user: User = Depends(get_current_user)):
