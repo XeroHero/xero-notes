@@ -26,19 +26,24 @@ const LoginPage = () => {
       await loginWithToken(idToken, user);
       console.log("✅ Backend authentication successful");
       
-      // Use setTimeout to avoid any potential toast issues
+      // Safe toast notification
+      try {
+        toast.success("Welcome back!");
+        console.log("✅ Toast notification shown");
+      } catch (toastError) {
+        console.log("⚠️ Toast notification failed, but login succeeded:", toastError);
+      }
+      
+      // Safe navigation with timeout
       setTimeout(() => {
         try {
-          toast.success("Welcome back!");
-          console.log("✅ Toast notification shown");
-        } catch (toastError) {
-          console.log("⚠️ Toast notification failed, but login succeeded:", toastError);
+          navigate("/dashboard");
+          console.log("🧭 Navigation to dashboard successful");
+        } catch (navError) {
+          console.log("⚠️ Navigation failed, but login succeeded:", navError);
         }
       }, 100);
       
-      // Navigate to dashboard
-      console.log("🧭 Navigating to dashboard...");
-      navigate("/dashboard");
       console.log("🏁 Login process completed successfully");
       
     } catch (error) {
