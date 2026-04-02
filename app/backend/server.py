@@ -376,18 +376,25 @@ async def health():
     """Health check endpoint"""
     return {"status": "healthy"}
 
-@app.options("/api/test-post")
-async def test_post_options():
-    """Handle OPTIONS preflight request"""
-    return {"message": "OPTIONS allowed"}
-
-@app.post("/api/test-post")
-async def test_post(request: Request):
-    """Test POST endpoint"""
-    print(f"🔍 POST /api/test-post called")
-    print(f"🔍 Request method: {request.method}")
-    print(f"🔍 Request headers: {dict(request.headers)}")
-    return {"message": "POST test works"}
+@app.api_route("/api/debug", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+async def debug_all_methods(request: Request):
+    """Debug endpoint that accepts all methods"""
+    print(f"🔍 DEBUG: {request.method} /api/debug called")
+    print(f"🔍 DEBUG: Headers: {dict(request.headers)}")
+    print(f"🔍 DEBUG: Query params: {dict(request.query_params)}")
+    
+    try:
+        body = await request.body()
+        print(f"🔍 DEBUG: Body: {body}")
+    except:
+        print(f"🔍 DEBUG: No body or body read error")
+    
+    return {
+        "method": request.method,
+        "headers": dict(request.headers),
+        "query_params": dict(request.query_params),
+        "message": f"Debug endpoint received {request.method}"
+    }
 
 @app.post("/api/auth/test-post")
 async def auth_test_post(request: Request):
