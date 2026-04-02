@@ -193,6 +193,16 @@ async def health():
 async def root():
     return {"message": "Xero Notes API is running", "version": "1.0.0"}
 
+# Simple test route at root level (bypasses /api prefix)
+@app.get("/test")
+async def simple_test():
+    """Simple test endpoint at root level"""
+    return {
+        "status": "ok",
+        "message": "Backend is working at root level",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
 # Notes endpoints (secured by user)
 @api_router.post("/notes")
 async def create_note(note_data: NoteCreate, request: Request, user: User = Depends(get_current_user)):

@@ -1,38 +1,46 @@
 import { useState, useEffect } from "react";
 
-const API = "/api";
-
 const AuthTest = () => {
-  const [testResult, setTestResult] = useState(null);
+  const [testResults, setTestResults] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const testBackend = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`${API}/auth/test`);
-        const data = await response.json();
-        setTestResult({
-          success: true,
-          data,
-          status: response.status
-        });
-      } catch (error) {
-        setTestResult({
-          success: false,
-          error: error.message,
-          status: 'Error'
-        });
-      } finally {
-        setLoading(false);
+    const testEndpoints = async () => {
+      const tests = [
+        { name: "Root Test", url: "/test" },
+        { name: "API Health", url: "/api/health" },
+        { name: "Auth Test", url: "/api/auth/test" }
+      ];
+
+      const results = {};
+
+      for (const test of tests) {
+        try {
+          const response = await fetch(test.url);
+          const data = await response.json();
+          results[test.name] = {
+            success: true,
+            data,
+            status: response.status
+          };
+        } catch (error) {
+          results[test.name] = {
+            success: false,
+            error: error.message,
+            status: 'Error'
+          };
+        }
       }
+
+      setTestResults(results);
+      setLoading(false);
     };
 
-    testBackend();
+    testEndpoints();
   }, []);
 
   if (loading) {
-    return <div>Testing backend connection...</div>;
+    return <div>Testing backend connections...</div>;
   }
 
   return (
@@ -43,20 +51,23 @@ const AuthTest = () => {
       borderRadius: '8px',
       backgroundColor: '#f9f9f9'
     }}>
-      <h3>Backend Connection Test</h3>
-      {testResult ? (
-        <div>
-          <p><strong>Status:</strong> {testResult.status}</p>
-          {testResult.success ? (
+      <h3>Backend Connection Tests</h3>
+      {Object.entries(testResults).map(([testName, result]) => (
+        <div key={testName} style={{ marginBottom: '15px', padding: '10px', backgroundColor: 'white', borderRadius: '4px' }}>
+          <h4>{testName}</h4>
+          <p><strong>Status:</strong> {result.status}</p>
+          {result.success ? (
             <div>
-              <p style={{ color: 'green' }}>✅ Backend is accessible!</p>
-              <pre>{JSON.stringify(testResult.data, null, 2)}</pre>
+              <p style={{ color: 'green' }}>✅ Success!</p>
+              <pre style={{ fontSize: '12px', backgroundColor: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
+                {JSON.stringify(result.data, null, 2)}
+              </pre>
             </div>
           ) : (
-            <p style={{ color: 'red' }}>❌ Error: {testResult.error}</p>
+            <p style={{ color: 'red' }}>❌ Error: {result.error}</p>
           )}
         </div>
-      ) : null}
+      ))}
     </div>
   );
 };
