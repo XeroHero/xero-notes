@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import AuthTest from "../components/AuthTest";
 import GoogleAuthTest from "../components/GoogleAuthTest";
 import SimpleAuthTest from "../components/SimpleAuthTest";
+import SuccessTest from "../components/SuccessTest";
 
 const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -76,6 +77,9 @@ const LoginPage = () => {
             
             {/* Simple Direct Test */}
             <SimpleAuthTest />
+            
+            {/* Success Handler Test */}
+            <SuccessTest />
             
             <div className="space-y-6">
               <div className="text-center">
