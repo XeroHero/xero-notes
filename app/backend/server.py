@@ -276,15 +276,28 @@ async def root():
 @app.get("/test")
 async def simple_test():
     """Simple test endpoint at root level"""
-    return {
-        "status": "ok",
-        "message": "Backend is working at root level",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "services": {
-            "mongodb": "connected" if db else "disconnected",
-            "firebase": "initialized" if firebase_app else "not_initialized"
+    try:
+        return {
+            "status": "ok",
+            "message": "Backend is working at root level",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "services": {
+                "mongodb": "connected" if db else "disconnected",
+                "firebase": "initialized" if firebase_app else "not_initialized",
+                "env_vars": {
+                    "MONGO_URL_set": bool(os.environ.get('MONGO_URL')),
+                    "DB_NAME_set": bool(os.environ.get('DB_NAME')),
+                    "FIREBASE_ADMIN_JSON_set": bool(os.environ.get('FIREBASE_ADMIN_JSON'))
+                }
+            }
         }
-    }
+    except Exception as e:
+        logger.error(f"Test endpoint error: {e}")
+        return {
+            "status": "error",
+            "message": f"Test endpoint failed: {str(e)}",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
 
 @app.get("/api/health")
 async def health():
@@ -295,6 +308,15 @@ async def health():
 async def test_post():
     """Test POST endpoint"""
     return {"message": "POST test works"}
+
+@app.get("/api/auth/test")
+async def auth_test():
+    """Auth test endpoint"""
+    return {
+        "status": "ok",
+        "message": "Auth test working",
+        "firebase_available": firebase_app is not None
+    }
 
 # Notes endpoints (secured by user)
 @api_router.post("/notes")
