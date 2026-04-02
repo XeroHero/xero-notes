@@ -6,6 +6,7 @@ import { signInWithGoogle } from "../lib/firebase";
 import { toast } from "sonner";
 import AuthTest from "../components/AuthTest";
 import GoogleAuthTest from "../components/GoogleAuthTest";
+import SimpleAuthTest from "../components/SimpleAuthTest";
 
 const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -72,6 +73,9 @@ const LoginPage = () => {
             
             {/* Google Auth Test */}
             <GoogleAuthTest />
+            
+            {/* Simple Direct Test */}
+            <SimpleAuthTest />
             
             <div className="space-y-6">
               <div className="text-center">
