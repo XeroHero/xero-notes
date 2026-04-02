@@ -223,15 +223,23 @@ async def get_me(user: User = Depends(get_current_user)):
 @api_router.get("/folders")
 async def get_folders(user: User = Depends(get_current_user)):
     """Get all folders for the authenticated user"""
-    folders = await db.folders.find({"user_id": user.user_id})
-    return {"folders": folders}
+    try:
+        folders = await db.folders.find({"user_id": user.user_id})
+        return {"folders": folders}
+    except Exception as e:
+        logger.error(f"Get folders error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Notes endpoints  
 @api_router.get("/notes")
 async def get_notes(user: User = Depends(get_current_user)):
     """Get all notes for the authenticated user"""
-    notes = await db.notes.find({"user_id": user.user_id})
-    return {"notes": notes}
+    try:
+        notes = await db.notes.find({"user_id": user.user_id})
+        return {"notes": notes}
+    except Exception as e:
+        logger.error(f"Get notes error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/auth/logout")
 async def logout(request: Request, response: Response):
