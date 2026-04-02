@@ -12,13 +12,32 @@ app = FastAPI()
 firebase_admin_json = os.environ.get('FIREBASE_ADMIN_JSON')
 firebase_app = None
 
+print(f"🔍 Firebase Admin SDK initialization check:")
+print(f"   FIREBASE_ADMIN_JSON exists: {bool(firebase_admin_json)}")
+if firebase_admin_json:
+    print(f"   JSON length: {len(firebase_admin_json)}")
+    print(f"   First 100 chars: {firebase_admin_json[:100]}")
+
 try:
     if firebase_admin_json:
         import json
-        firebase_config = json.loads(firebase_admin_json)
-        cred = credentials.Certificate(firebase_config)
-        firebase_app = firebase_admin.initialize_app(cred)
-        print("✅ Firebase Admin SDK initialized from environment variable")
+        try:
+            firebase_config = json.loads(firebase_admin_json)
+            print("✅ JSON parsing successful")
+            print(f"   Config keys: {list(firebase_config.keys())}")
+            print(f"   Project ID: {firebase_config.get('project_id', 'NOT_FOUND')}")
+            print(f"   Client email: {firebase_config.get('client_email', 'NOT_FOUND')}")
+            
+            cred = credentials.Certificate(firebase_config)
+            firebase_app = firebase_admin.initialize_app(cred)
+            print("✅ Firebase Admin SDK initialized from environment variable")
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON parsing failed: {e}")
+            print(f"   First 200 chars: {firebase_admin_json[:200]}")
+        except Exception as e:
+            print(f"❌ Firebase initialization failed: {e}")
+            import traceback
+            traceback.print_exc()
     else:
         print("⚠️ FIREBASE_ADMIN_JSON not set")
 except Exception as e:
