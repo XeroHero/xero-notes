@@ -16,14 +16,29 @@ const AuthTest = () => {
 
       for (const test of tests) {
         try {
+          console.log(`Testing ${test.name} at ${test.url}`);
           const response = await fetch(test.url);
-          const data = await response.json();
+          console.log(`Response status: ${response.status}`);
+          console.log(`Response headers:`, Object.fromEntries(response.headers.entries()));
+          
+          const text = await response.text();
+          console.log(`Response text: ${text}`);
+          
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch (e) {
+            data = { rawResponse: text };
+          }
+          
           results[test.name] = {
-            success: true,
+            success: response.ok,
             data,
-            status: response.status
+            status: response.status,
+            headers: Object.fromEntries(response.headers.entries())
           };
         } catch (error) {
+          console.error(`Error testing ${test.name}:`, error);
           results[test.name] = {
             success: false,
             error: error.message,
@@ -52,10 +67,21 @@ const AuthTest = () => {
       backgroundColor: '#f9f9f9'
     }}>
       <h3>Backend Connection Tests</h3>
+      <p style={{ fontSize: '12px', color: '#666', marginBottom: '20px' }}>
+        Check browser console (F12) for detailed debugging information
+      </p>
       {Object.entries(testResults).map(([testName, result]) => (
         <div key={testName} style={{ marginBottom: '15px', padding: '10px', backgroundColor: 'white', borderRadius: '4px' }}>
           <h4>{testName}</h4>
           <p><strong>Status:</strong> {result.status}</p>
+          {result.headers && (
+            <details style={{ marginBottom: '10px' }}>
+              <summary><strong>Headers:</strong></summary>
+              <pre style={{ fontSize: '10px', backgroundColor: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
+                {JSON.stringify(result.headers, null, 2)}
+              </pre>
+            </details>
+          )}
           {result.success ? (
             <div>
               <p style={{ color: 'green' }}>✅ Success!</p>
@@ -64,7 +90,14 @@ const AuthTest = () => {
               </pre>
             </div>
           ) : (
-            <p style={{ color: 'red' }}>❌ Error: {result.error}</p>
+            <div>
+              <p style={{ color: 'red' }}>❌ Error: {result.error}</p>
+              {result.data && (
+                <pre style={{ fontSize: '12px', backgroundColor: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
+                  {JSON.stringify(result.data, null, 2)}
+                </pre>
+              )}
+            </div>
           )}
         </div>
       ))}
