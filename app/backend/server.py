@@ -14,7 +14,7 @@ import firebase_admin
 from firebase_admin import credentials, auth as firebase_auth
 
 # Import auth routers
-from firebase_auth import firebase_auth_router
+from app.backend.firebase_auth import firebase_auth_router
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
