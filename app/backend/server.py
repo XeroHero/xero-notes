@@ -314,10 +314,14 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
         )
         
         user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+        print(f"🔍 Returning user document: {user_doc}")
         return user_doc
         
     except Exception as e:
         logger.error(f"Firebase login error: {e}")
+        print(f"🚨 FIREBASE LOGIN ERROR: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
 
 @app.get("/api/me")
