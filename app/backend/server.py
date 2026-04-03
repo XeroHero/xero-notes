@@ -277,16 +277,7 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
         
         print(f"🔍 About to call db.users.update_one...")
         
-        # Test MongoDB connection first
-        try:
-            print("🔍 Testing MongoDB connection...")
-            await db.command('ping')
-            print("🔍 MongoDB ping successful!")
-        except Exception as mongo_error:
-            print(f"🚨 MongoDB connection test failed: {mongo_error}")
-            raise HTTPException(status_code=500, detail=f"MongoDB connection failed: {str(mongo_error)}")
-        
-        # Test read operation first
+        # Test read operation first (skip ping test)
         try:
             print("🔍 Testing MongoDB read operation...")
             existing_user = await db.users.find_one({"user_id": user_id})
