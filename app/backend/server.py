@@ -276,12 +276,37 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
         }
         
         print(f"🔍 About to call db.users.update_one...")
-        await db.users.update_one(
-            {"user_id": user_id},
-            {"$set": user_doc},
-            upsert=True
-        )
-        print(f"🔍 User created/updated successfully!")
+        
+        # Test MongoDB connection first
+        try:
+            print("🔍 Testing MongoDB connection...")
+            await db.command('ping')
+            print("🔍 MongoDB ping successful!")
+        except Exception as mongo_error:
+            print(f"🚨 MongoDB connection test failed: {mongo_error}")
+            raise HTTPException(status_code=500, detail=f"MongoDB connection failed: {str(mongo_error)}")
+        
+        # Test read operation first
+        try:
+            print("🔍 Testing MongoDB read operation...")
+            existing_user = await db.users.find_one({"user_id": user_id})
+            print(f"🔍 Read operation successful! Found user: {existing_user}")
+        except Exception as read_error:
+            print(f"🚨 MongoDB read operation failed: {read_error}")
+            raise HTTPException(status_code=500, detail=f"MongoDB read failed: {str(read_error)}")
+        
+        # Test write operation
+        try:
+            print("🔍 Testing MongoDB write operation...")
+            await db.users.update_one(
+                {"user_id": user_id},
+                {"$set": user_doc},
+                upsert=True
+            )
+            print(f"🔍 User created/updated successfully!")
+        except Exception as write_error:
+            print(f"🚨 MongoDB write operation failed: {write_error}")
+            raise HTTPException(status_code=500, detail=f"MongoDB write failed: {str(write_error)}")
         
         print(f"🔍 About to create session token...")
         # Create session token
