@@ -392,6 +392,18 @@ async def simple_test():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
+@app.get("/api/debug-server")
+async def debug_server():
+    """Debug endpoint to confirm server.py is being used"""
+    print("🚨🚨🚨 SERVER.PY DEBUG ENDPOINT CALLED 🚨🚨🚨")
+    return {
+        "message": "server.py is being used!",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "server_file": "app/backend/server.py",
+        "firebase_available": firebase_app is not None,
+        "db_available": db is not None
+    }
+
 @app.get("/api/health")
 async def health():
     """Health check endpoint"""
