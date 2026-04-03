@@ -238,6 +238,7 @@ async def logout(request: Request, response: Response):
 @api_router.post("/auth/firebase-login")
 async def firebase_login(firebase_request: FirebaseLoginRequest, request: Request, response: Response):
     """Verify Firebase token and create session"""
+    print("🚨🚨🚨 FIREBASE LOGIN ENDPOINT CALLED 🚨🚨🚨")
     print(f"🔍 Firebase login endpoint called")
     print(f"🔍 DB is available: {db is not None}")
     print(f"🔍 Firebase app available: {firebase_app is not None}")
@@ -245,9 +246,11 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
     print(f"🔍 Request has idToken: {hasattr(firebase_request, 'idToken')}")
     
     if db is None:
+        print("🚨 DB IS NONE - RETURNING ERROR")
         raise HTTPException(status_code=500, detail="Database not available")
     
     if firebase_app is None:
+        print("🚨 FIREBASE APP IS NONE - RETURNING ERROR")
         raise HTTPException(status_code=500, detail="Firebase not available")
     
     try:

@@ -117,73 +117,8 @@ async def auth_test():
         "firebase_available": firebase_app is not None
     }
 
-@app.post("/api/auth/firebase-login")
-async def firebase_login(request: FirebaseLoginRequest):
-    """Test Firebase login endpoint"""
-    try:
-        print(f"🔐 Firebase login attempt for user: {request.firebaseUser.email}")
-        print(f"📋 Request data: uid={request.firebaseUser.uid}, email={request.firebaseUser.email}")
-        
-        if not firebase_app:
-            print("❌ Firebase Admin SDK not initialized")
-            return {
-                "error": "Firebase Admin SDK not properly initialized",
-                "details": "Check FIREBASE_ADMIN_JSON environment variable",
-                "env_vars_set": {
-                    "FIREBASE_ADMIN_JSON": bool(os.environ.get('FIREBASE_ADMIN_JSON')),
-                    "MONGO_URL": bool(os.environ.get('MONGO_URL')),
-                    "DB_NAME": bool(os.environ.get('DB_NAME'))
-                }
-            }
-        
-        print("✅ Firebase app is available, attempting token verification...")
-        
-        # Verify the Firebase token
-        try:
-            decoded_token = firebase_auth.verify_id_token(request.idToken)
-            print(f"✅ Token verified successfully: {decoded_token.get('uid')}")
-        except Exception as token_error:
-            print(f"❌ Token verification failed: {token_error}")
-            return {
-                "error": "Token verification failed",
-                "details": str(token_error),
-                "token_preview": request.idToken[:20] + "..." if request.idToken else "null"
-            }
-        
-        # Ensure the token UID matches the provided user UID
-        if decoded_token.get('uid') != request.firebaseUser.uid:
-            print(f"❌ Token UID mismatch: {decoded_token.get('uid')} != {request.firebaseUser.uid}")
-            return {
-                "error": "Token UID mismatch",
-                "details": f"Token UID: {decoded_token.get('uid')}, User UID: {request.firebaseUser.uid}"
-            }
-        
-        # Create or get user data
-        user_id = f"user_{uuid.uuid4().hex[:12]}"
-        user_data = {
-            "user_id": user_id,
-            "email": request.firebaseUser.email,
-            "name": request.firebaseUser.displayName,
-            "picture": request.firebaseUser.photoURL,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        
-        # Store in mock database
-        mock_users[user_id] = user_data
-        
-        print(f"✅ Login successful for user: {request.firebaseUser.email}")
-        
-        return user_data
-        
-    except Exception as e:
-        print(f"❌ Firebase login error: {e}")
-        import traceback
-        traceback.print_exc()
-        return {
-            "error": "Authentication failed",
-            "details": str(e),
-            "traceback": traceback.format_exc()
-        }
+# Firebase login endpoint removed - using server.py instead
+# This was causing routing conflicts with the main server
 
 @app.get("/api/me")
 async def get_current_user():
