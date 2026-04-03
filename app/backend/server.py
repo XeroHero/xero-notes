@@ -433,6 +433,20 @@ async def debug_server():
         "db_available": db is not None
     }
 
+@app.get("/api/debug-env")
+async def debug_env():
+    """Debug endpoint to check environment variables (safe)"""
+    return {
+        "deployment_url": os.environ.get('VERCEL_URL', 'unknown'),
+        "mongo_url_set": bool(os.environ.get('MONGO_URL')),
+        "mongo_url_length": len(os.environ.get('MONGO_URL', '')),
+        "mongo_url_starts_with": os.environ.get('MONGO_URL', '')[:20] + '...' if os.environ.get('MONGO_URL') else 'not_set',
+        "db_name_set": bool(os.environ.get('DB_NAME')),
+        "db_name": os.environ.get('DB_NAME', 'not_set'),
+        "firebase_set": bool(os.environ.get('FIREBASE_ADMIN_JSON')),
+        "firebase_length": len(os.environ.get('FIREBASE_ADMIN_JSON', ''))
+    }
+
 @app.get("/api/health")
 async def health():
     """Health check endpoint"""
