@@ -245,15 +245,6 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
     print(f"🔍 Request body type: {type(firebase_request)}")
     print(f"🔍 Request has idToken: {hasattr(firebase_request, 'idToken')}")
     
-    # Return early for debugging
-    return {
-        "debug": "Firebase login endpoint reached!",
-        "db_available": db is not None,
-        "firebase_available": firebase_app is not None,
-        "request_type": str(type(firebase_request)),
-        "has_idToken": hasattr(firebase_request, 'idToken')
-    }
-    
     if db is None:
         print("🚨 DB IS NONE - RETURNING ERROR")
         raise HTTPException(status_code=500, detail="Database not available")
