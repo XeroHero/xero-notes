@@ -438,6 +438,44 @@ async def debug_env():
         "firebase_length": len(os.environ.get('FIREBASE_ADMIN_JSON', ''))
     }
 
+@app.get("/api/debug-mongo")
+async def debug_mongo():
+    """Debug MongoDB connection details"""
+    try:
+        # Test basic connection
+        print("🔍 Testing MongoDB basic connection...")
+        db_info = {
+            "db_name": db.name if db else "no_db",
+            "db_available": db is not None,
+            "collections": []
+        }
+        
+        if db is not None:
+            try:
+                # List collections
+                collections = await db.list_collection_names()
+                db_info["collections"] = collections
+                print(f"🔍 Collections found: {collections}")
+                
+                # Test users collection specifically
+                users_count = await db.users.count_documents({})
+                db_info["users_count"] = users_count
+                print(f"🔍 Users collection count: {users_count}")
+                
+            except Exception as collection_error:
+                db_info["collection_error"] = str(collection_error)
+                print(f"🚨 Collection error: {collection_error}")
+        
+        return db_info
+        
+    except Exception as e:
+        print(f"🚨 MongoDB debug error: {e}")
+        return {
+            "error": str(e),
+            "db_available": db is not None,
+            "db_name": db.name if db else "no_db"
+        }
+
 @app.get("/api/health")
 async def health():
     """Health check endpoint"""
