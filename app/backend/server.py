@@ -252,12 +252,16 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
     
     try:
         # Verify Firebase ID token
+        print(f"🔍 About to verify Firebase token...")
         decoded_token = firebase_auth.verify_id_token(firebase_request.idToken)
+        print(f"🔍 Firebase token verified successfully!")
         
         user_id = f"user_{decoded_token['uid'][:12]}"
         email = decoded_token.get('email', '')
         name = decoded_token.get('name', '')
         picture = decoded_token.get('picture', '')
+        
+        print(f"🔍 About to create/update user in database...")
         
         # Create or update user in database
         user_doc = {
@@ -268,12 +272,15 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         
+        print(f"🔍 About to call db.users.update_one...")
         await db.users.update_one(
             {"user_id": user_id},
             {"$set": user_doc},
             upsert=True
         )
+        print(f"🔍 User created/updated successfully!")
         
+        print(f"🔍 About to create session token...")
         # Create session token
         session_token = f"session_{uuid.uuid4().hex[:12]}"
         expires_at = datetime.now(timezone.utc) + timedelta(days=7)
@@ -285,8 +292,13 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         
+        print(f"🔍 About to delete old sessions...")
         await db.user_sessions.delete_many({"user_id": user_id})
+        print(f"🔍 Old sessions deleted!")
+        
+        print(f"🔍 About to insert new session...")
         await db.user_sessions.insert_one(session_doc)
+        print(f"🔍 New session created!")
         
         response.set_cookie(
             key="session_token",
