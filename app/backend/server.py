@@ -321,7 +321,7 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
         raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
 
 @app.get("/api/me")
-async def get_current_user():
+async def get_current_user(request: Request):
     """Get current authenticated user (for session verification)"""
     session_token = request.cookies.get("session_token")
     
