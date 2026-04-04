@@ -19,6 +19,12 @@ from firebase_admin import credentials, auth as firebase_auth
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# In-memory storage for development (fallback when MongoDB is unavailable)
+memory_storage = {
+    "folders": [],
+    "notes": []
+}
+
 # MongoDB connection with error handling
 try:
     mongo_url = os.environ['MONGO_URL']
@@ -744,7 +750,7 @@ async def create_note(note_data: NoteCreate, request: Request, user: User = Depe
     print(f"🔍 DEBUG: Request method: {request.method}")
     print(f"🔍 DEBUG: Request URL: {request.url}")
     
-    # Fallback: Return mock note
+    # Create note in memory storage
     note_doc = {
         "note_id": f"note_{uuid.uuid4().hex[:12]}",
         "user_id": user.user_id,
@@ -756,30 +762,71 @@ async def create_note(note_data: NoteCreate, request: Request, user: User = Depe
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
+    
+    # Add to in-memory storage
+    memory_storage["notes"].append(note_doc)
+    print(f"✅ Created note in memory: {note_doc['title']}")
+    
     return note_doc
 
 @api_router.get("/notes")
 async def get_notes(user: User = Depends(get_current_user)):
     """Get all notes for the authenticated user"""
-    # Fallback: Return empty notes list
-    return {"notes": []}
+    # Use in-memory storage for development
+    user_notes = [note for note in memory_storage["notes"] if note.get("user_id") == user.user_id]
+    return {"notes": user_notes}
 
 @api_router.get("/notes/{note_id}")
 async def get_note(note_id: str, user: User = Depends(get_current_user)):
     """Get a specific note by ID (must belong to user)"""
-    # Fallback: Return 404
-    raise HTTPException(status_code=404, detail="Note not found")
+    # Find note in in-memory storage
+    note = next((note for note in memory_storage["notes"] 
+                if note.get("note_id") == note_id and note.get("user_id") == user.user_id), None)
+    
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
+    return note
 
 @api_router.put("/notes/{note_id}")
 async def update_note(note_id: str, note_data: NoteUpdate, user: User = Depends(get_current_user)):
     """Update a note (must belong to user)"""
-    # Fallback: Return 404
-    raise HTTPException(status_code=404, detail="Note not found")
+    # Find and update note in in-memory storage
+    note = next((note for note in memory_storage["notes"] 
+                if note.get("note_id") == note_id and note.get("user_id") == user.user_id), None)
+    
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
+    # Update fields
+    if note_data.title is not None:
+        note["title"] = note_data.title
+    if note_data.content is not None:
+        note["content"] = note_data.content
+    if note_data.folder_id is not None:
+        note["folder_id"] = note_data.folder_id
+    if note_data.is_shared is not None:
+        note["is_shared"] = note_data.is_shared
+    
+    note["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    print(f"✅ Updated note in memory: {note_id}")
+    return note
 
 @api_router.delete("/notes/{note_id}")
 async def delete_note(note_id: str, user: User = Depends(get_current_user)):
     """Delete a note (must belong to user)"""
-    # Fallback: Return success
+    # Remove from in-memory storage
+    original_count = len(memory_storage["notes"])
+    memory_storage["notes"] = [
+        note for note in memory_storage["notes"] 
+        if not (note.get("note_id") == note_id and note.get("user_id") == user.user_id)
+    ]
+    
+    if len(memory_storage["notes"]) == original_count:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
+    print(f"✅ Deleted note from memory: {note_id}")
     return {"success": True, "message": "Note deleted"}
 
 @api_router.post("/notes/{note_id}/share")
@@ -799,13 +846,14 @@ async def get_shared_note(share_link: str):
 @api_router.get("/folders")
 async def get_folders(user: User = Depends(get_current_user)):
     """Get all folders for the authenticated user"""
-    # Fallback: Return empty folders list
-    return {"folders": []}
+    # Use in-memory storage for development
+    user_folders = [folder for folder in memory_storage["folders"] if folder.get("user_id") == user.user_id]
+    return {"folders": user_folders}
 
 @api_router.post("/folders")
 async def create_folder(folder_data: FolderCreate, user: User = Depends(get_current_user)):
     """Create a new folder for the authenticated user"""
-    # Fallback: Return mock folder
+    # Create folder in memory storage
     folder_doc = {
         "folder_id": f"folder_{uuid.uuid4().hex[:12]}",
         "user_id": user.user_id,
@@ -814,12 +862,27 @@ async def create_folder(folder_data: FolderCreate, user: User = Depends(get_curr
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
+    
+    # Add to in-memory storage
+    memory_storage["folders"].append(folder_doc)
+    print(f"✅ Created folder in memory: {folder_doc['name']}")
+    
     return folder_doc
 
 @api_router.delete("/folders/{folder_id}")
 async def delete_folder(folder_id: str, user: User = Depends(get_current_user)):
     """Delete a folder (must belong to user)"""
-    # Fallback: Return success
+    # Remove from in-memory storage
+    original_count = len(memory_storage["folders"])
+    memory_storage["folders"] = [
+        folder for folder in memory_storage["folders"] 
+        if not (folder.get("folder_id") == folder_id and folder.get("user_id") == user.user_id)
+    ]
+    
+    if len(memory_storage["folders"]) == original_count:
+        raise HTTPException(status_code=404, detail="Folder not found")
+    
+    print(f"✅ Deleted folder from memory: {folder_id}")
     return {"success": True, "message": "Folder deleted"}
 
 # Include routers
