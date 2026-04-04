@@ -237,7 +237,7 @@ async def logout(request: Request, response: Response):
 
 @api_router.post("/auth/firebase-login")
 async def firebase_login(firebase_request: FirebaseLoginRequest, request: Request, response: Response):
-    """Verify Firebase token and return user data (no MongoDB for now)"""
+    """Verify Firebase token and return user data"""
     print("🚨🚨🚨 FIREBASE LOGIN ENDPOINT CALLED 🚨🚨🚨")
 
     try:
@@ -251,40 +251,50 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
         name = decoded_token.get('name', '')
         picture = decoded_token.get('picture', '')
         
-        print(f"🔍 About to check if user exists in database...")
+        # Try to get existing user, but don't fail if MongoDB permissions are an issue
+        existing_user = None
+        if db is not None:
+            try:
+                print("🔍 Checking if user exists in database...")
+                existing_user = await db.users.find_one({"user_id": user_id})
+                print(f"🔍 Found existing user: {existing_user is not None}")
+            except Exception as db_error:
+                print(f"⚠️ Database read failed, proceeding with token data: {db_error}")
         
-        # Test read operation first
-        try:
-            print("🔍 Testing MongoDB read operation...")
-            existing_user = await db.users.find_one({"user_id": user_id})
-            print(f"🔍 Read operation successful! Found user: {existing_user}")
-        except Exception as read_error:
-            print(f"🚨 MongoDB read operation failed: {read_error}")
-            raise HTTPException(status_code=500, detail=f"MongoDB read failed: {str(read_error)}")
-        
-        # Create user data (only if user doesn't exist)
-        if not existing_user:
-            print("🔍 User doesn't exist, creating new user...")
-            user_data = {
-                "user_id": user_id,
-                "email": email,
-                "name": name,
-                "picture": picture,
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            print(f"🔍 Returning new user data: {user_data}")
-            return user_data
-        else:
-            print("🔍 User already exists, returning existing data")
+        # Return user data (from database if available, otherwise from token)
+        if existing_user:
+            print("🔍 Returning existing user data from database")
             return {
+                "user_id": user_id,
+                "email": existing_user.get("email", email),
+                "name": existing_user.get("name", name),
+                "picture": existing_user.get("picture", picture)
+            }
+        else:
+            print("🔍 Returning user data from Firebase token")
+            user_data = {
                 "user_id": user_id,
                 "email": email,
                 "name": name,
                 "picture": picture
             }
-
-        print(f"🔍 Returning user data: {user_data}")
-        return user_data
+            
+            # Try to save to database, but don't fail if permissions are an issue
+            if db is not None:
+                try:
+                    user_doc = {
+                        "user_id": user_id,
+                        "email": email,
+                        "name": name,
+                        "picture": picture,
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    await db.users.insert_one(user_doc)
+                    print("✅ User saved to database")
+                except Exception as save_error:
+                    print(f"⚠️ Database save failed, but continuing: {save_error}")
+            
+            return user_data
 
     except Exception as e:
         print(f"🚨 FIREBASE LOGIN ERROR: {e}")
