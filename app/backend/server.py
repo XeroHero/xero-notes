@@ -441,12 +441,18 @@ async def debug_env():
 @app.get("/api/simple-debug")
 async def simple_debug():
     """Simple debug endpoint"""
-    return {
-        "message": "Simple debug working",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "db_available": db is not None,
-        "db_name": str(type(db).__name__ if db else "None")
-    }
+    try:
+        return {
+            "message": "Simple debug working",
+            "timestamp": "2024-04-04T00:00:00Z",
+            "db_available": db is not None,
+            "db_name": "database" if db else "none"
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "message": "Debug endpoint failed"
+        }
 
 @app.get("/api/debug-mongo")
 async def debug_mongo():
