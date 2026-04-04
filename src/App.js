@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import "./App.css";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { HashRouter as Router, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { Analytics } from "@vercel/analytics/react";
@@ -152,6 +152,26 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
+      {/* Catch all route for 404 handling */}
+      <Route path="*" element={
+        <div style={{ padding: '2rem', textAlign: 'center' }}>
+          <h1>404 - Page Not Found</h1>
+          <p>The page you're looking for doesn't exist.</p>
+          <button 
+            onClick={() => window.location.href = '/'}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#E06A4F',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.25rem',
+              cursor: 'pointer'
+            }}
+          >
+            Go Home
+          </button>
+        </div>
+      } />
     </Routes>
   );
 }
@@ -159,12 +179,12 @@ function AppRouter() {
 function App() {
   return (
     <div className="App">
-      <BrowserRouter>
+      <Router>
         <AuthProvider>
           <AppRouter />
           <Toaster position="bottom-right" richColors />
         </AuthProvider>
-      </BrowserRouter>
+      </Router>
       <Analytics />
     </div>
   );
