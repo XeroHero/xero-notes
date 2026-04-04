@@ -45,11 +45,13 @@ print(f"   Raw env var length: {len(firebase_admin_json) if firebase_admin_json 
 if firebase_admin_json:
     print(f"   Raw first 200 chars: {repr(firebase_admin_json[:200])}")
 
-# Initialize Firebase Admin SDK with comprehensive error handling
+# Initialize Firebase Admin SDK with ultimate fallback methods
 if firebase_admin_json:
     try:
         import json
         import ast
+        
+        firebase_config = None
         
         # Method 1: Try direct JSON parsing
         try:
@@ -100,7 +102,94 @@ if firebase_admin_json:
                             print("✅ Method 5: Manual line reconstruction successful")
                         except Exception as e5:
                             print(f"❌ Method 5 failed: {e5}")
-                            firebase_config = None
+                            
+                            # Method 6: Ultimate fallback - try to reconstruct from individual components
+                            try:
+                                print("🔧 Attempting ultimate fallback method...")
+                                # If JSON parsing completely fails, try to reconstruct from file
+                                firebase_config = {
+                                    "type": "service_account",
+                                    "project_id": "xero-notes",
+                                    "private_key_id": "594bb7e380083a61a39556eed63eb9c0f25e441a",
+                                    "client_email": "firebase-adminsdk-fbsvc@xero-notes.iam.gserviceaccount.com",
+                                    "client_id": "100717736424180417094",
+                                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                                    "token_uri": "https://oauth2.googleapis.com/token",
+                                    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                                    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40xero-notes.iam.gserviceaccount.com",
+                                    "universe_domain": "googleapis.com"
+                                }
+                                
+                                # Try to extract private key from environment variable
+                                if '-----BEGIN PRIVATE KEY-----' in firebase_admin_json:
+                                    # Extract private key section
+                                    start = firebase_admin_json.find('-----BEGIN PRIVATE KEY-----')
+                                    end = firebase_admin_json.find('-----END PRIVATE KEY-----', start)
+                                    if start != -1 and end != -1:
+                                        private_key_section = firebase_admin_json[start:end + len('-----END PRIVATE KEY-----')]
+                                        # Clean up the private key
+                                        private_key_section = private_key_section.replace('\\\\n', '\n').replace('\\n', '\n').replace('\\\\n', '\n')
+                                        firebase_config["private_key"] = '-----BEGIN PRIVATE KEY-----\n' + private_key_section + '\n-----END PRIVATE KEY-----\n'
+                                        print("✅ Method 6: Ultimate fallback successful - extracted private key")
+                                    else:
+                                        print("❌ Method 6: Could not find private key section")
+                                else:
+                                    print("❌ Method 6: No private key found in environment variable")
+                                    
+                            except Exception as e6:
+                                print(f"❌ Method 6 failed: {e6}")
+                                firebase_config = None
+        
+        # Method 7: Alternative approach - use individual environment variables
+        if firebase_config is None:
+            try:
+                print("🔧 Attempting Method 7: Individual environment variables...")
+                
+                # Try to get individual Firebase environment variables
+                firebase_type = os.environ.get('FIREBASE_TYPE', 'service_account')
+                firebase_project_id = os.environ.get('FIREBASE_PROJECT_ID', 'xero-notes')
+                firebase_private_key_id = os.environ.get('FIREBASE_PRIVATE_KEY_ID', '594bb7e380083a61a39556eed63eb9c0f25e441a')
+                firebase_client_email = os.environ.get('FIREBASE_CLIENT_EMAIL', 'firebase-adminsdk-fbsvc@xero-notes.iam.gserviceaccount.com')
+                firebase_client_id = os.environ.get('FIREBASE_CLIENT_ID', '100717736424180417094')
+                firebase_auth_uri = os.environ.get('FIREBASE_AUTH_URI', 'https://accounts.google.com/o/oauth2/auth')
+                firebase_token_uri = os.environ.get('FIREBASE_TOKEN_URI', 'https://oauth2.googleapis.com/token')
+                firebase_auth_provider = os.environ.get('FIREBASE_AUTH_PROVIDER', 'https://www.googleapis.com/oauth2/v1/certs')
+                firebase_client_cert = os.environ.get('FIREBASE_CLIENT_CERT', 'https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40xero-notes.iam.gserviceaccount.com')
+                firebase_universe = os.environ.get('FIREBASE_UNIVERSE', 'googleapis.com')
+                
+                # Get private key from individual env var or fallback
+                firebase_private_key = os.environ.get('FIREBASE_PRIVATE_KEY')
+                if not firebase_private_key and firebase_admin_json and '-----BEGIN PRIVATE KEY-----' in firebase_admin_json:
+                    # Extract from JSON if individual env var not set
+                    start = firebase_admin_json.find('-----BEGIN PRIVATE KEY-----')
+                    end = firebase_admin_json.find('-----END PRIVATE KEY-----', start)
+                    if start != -1 and end != -1:
+                        private_key_section = firebase_admin_json[start:end + len('-----END PRIVATE KEY-----')]
+                        firebase_private_key = private_key_section.replace('\\\\n', '\n').replace('\\n', '\n').replace('\\\\n', '\n')
+                        firebase_private_key = '-----BEGIN PRIVATE KEY-----\n' + firebase_private_key + '\n-----END PRIVATE KEY-----\n'
+                
+                if firebase_private_key:
+                    firebase_config = {
+                        "type": firebase_type,
+                        "project_id": firebase_project_id,
+                        "private_key_id": firebase_private_key_id,
+                        "private_key": firebase_private_key,
+                        "client_email": firebase_client_email,
+                        "client_id": firebase_client_id,
+                        "auth_uri": firebase_auth_uri,
+                        "token_uri": firebase_token_uri,
+                        "auth_provider_x509_cert_url": firebase_auth_provider,
+                        "client_x509_cert_url": firebase_client_cert,
+                        "universe_domain": firebase_universe
+                    }
+                    print("✅ Method 7: Individual environment variables successful")
+                else:
+                    print("❌ Method 7: No private key available")
+                    firebase_config = None
+                    
+            except Exception as e7:
+                print(f"❌ Method 7 failed: {e7}")
+                firebase_config = None
         
         if firebase_config:
             # Fix private key format regardless of method used
