@@ -416,40 +416,75 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
             except Exception as db_error:
                 print(f"⚠️ Database read failed, proceeding with token data: {db_error}")
         
-        # Return user data (from database if available, otherwise from token)
-        if existing_user:
-            print("🔍 Returning existing user data from database")
-            return {
-                "user_id": user_id,
-                "email": existing_user.get("email", email),
-                "name": existing_user.get("name", name),
-                "picture": existing_user.get("picture", picture)
-            }
-        else:
-            print("🔍 Returning user data from Firebase token")
-            user_data = {
-                "user_id": user_id,
-                "email": email,
-                "name": name,
-                "picture": picture
-            }
-            
-            # Try to save to database, but don't fail if permissions are an issue
-            if db is not None:
-                try:
-                    user_doc = {
-                        "user_id": user_id,
-                        "email": email,
-                        "name": name,
-                        "picture": picture,
-                        "created_at": datetime.now(timezone.utc).isoformat()
-                    }
+        # Create or update user in database
+        if db is not None:
+            try:
+                user_doc = {
+                    "user_id": user_id,
+                    "email": email,
+                    "name": name,
+                    "picture": picture,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                if existing_user:
+                    # Update existing user
+                    await db.users.update_one(
+                        {"user_id": user_id},
+                        {"$set": {"name": name, "picture": picture}}
+                    )
+                    print("✅ User updated in database")
+                else:
+                    # Insert new user
                     await db.users.insert_one(user_doc)
-                    print("✅ User saved to database")
-                except Exception as save_error:
-                    print(f"⚠️ Database save failed, but continuing: {save_error}")
-            
-            return user_data
+                    print("✅ User created in database")
+            except Exception as save_error:
+                print(f"⚠️ Database save failed, but continuing: {save_error}")
+        
+        # Create session token for authentication
+        session_token = f"session_{uuid.uuid4().hex[:24]}"
+        expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+        
+        # Save session to database
+        if db is not None:
+            try:
+                session_doc = {
+                    "user_id": user_id,
+                    "session_token": session_token,
+                    "expires_at": expires_at.isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                # Delete existing sessions for this user
+                await db.user_sessions.delete_many({"user_id": user_id})
+                # Insert new session
+                await db.user_sessions.insert_one(session_doc)
+                print("✅ Session created in database")
+            except Exception as session_error:
+                print(f"⚠️ Session creation failed, but continuing: {session_error}")
+        
+        # Set session cookie
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            secure=False,  # Changed to False for Vercel compatibility
+            samesite="lax",  # Changed to lax for better compatibility
+            path="/",
+            max_age=7 * 24 * 60 * 60
+        )
+        print("✅ Session cookie set")
+        
+        # Return user data
+        user_data = {
+            "user_id": user_id,
+            "email": email,
+            "name": name,
+            "picture": picture
+        }
+        
+        print("🔍 Returning user data from Firebase token")
+        return user_data
 
     except Exception as e:
         print(f"🚨 FIREBASE LOGIN ERROR: {e}")
