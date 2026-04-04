@@ -237,107 +237,29 @@ async def logout(request: Request, response: Response):
 
 @api_router.post("/auth/firebase-login")
 async def firebase_login(firebase_request: FirebaseLoginRequest, request: Request, response: Response):
-    """Verify Firebase token and create session"""
+    """Verify Firebase token and return user data (no MongoDB for now)"""
     print("🚨🚨🚨 FIREBASE LOGIN ENDPOINT CALLED 🚨🚨🚨")
-    print(f"🔍 Firebase login endpoint called")
-    print(f"🔍 DB is available: {db is not None}")
-    print(f"🔍 Firebase app available: {firebase_app is not None}")
-    print(f"🔍 Request body type: {type(firebase_request)}")
-    print(f"🔍 Request has idToken: {hasattr(firebase_request, 'idToken')}")
-    
-    if db is None:
-        print("🚨 DB IS NONE - RETURNING ERROR")
-        raise HTTPException(status_code=500, detail="Database not available")
-    
-    if firebase_app is None:
-        print("🚨 FIREBASE APP IS NONE - RETURNING ERROR")
-        raise HTTPException(status_code=500, detail="Firebase not available")
-    
+
     try:
         # Verify Firebase ID token
-        print(f"🔍 About to verify Firebase token...")
         decoded_token = firebase_auth.verify_id_token(firebase_request.idToken)
         print(f"🔍 Firebase token verified successfully!")
-        
+
+        # Create user data from token
         user_id = f"user_{decoded_token['uid'][:12]}"
-        email = decoded_token.get('email', '')
-        name = decoded_token.get('name', '')
-        picture = decoded_token.get('picture', '')
-        
-        print(f"🔍 About to create/update user in database...")
-        
-        # Create or update user in database
-        user_doc = {
+        user_data = {
             "user_id": user_id,
-            "email": email,
-            "name": name,
-            "picture": picture,
+            "email": decoded_token.get('email', ''),
+            "name": decoded_token.get('name', ''),
+            "picture": decoded_token.get('picture', ''),
             "created_at": datetime.now(timezone.utc).isoformat()
         }
-        
-        print(f"🔍 About to call db.users.update_one...")
-        
-        # Test read operation first (skip ping test)
-        try:
-            print("🔍 Testing MongoDB read operation...")
-            existing_user = await db.users.find_one({"user_id": user_id})
-            print(f"🔍 Read operation successful! Found user: {existing_user}")
-        except Exception as read_error:
-            print(f"🚨 MongoDB read operation failed: {read_error}")
-            raise HTTPException(status_code=500, detail=f"MongoDB read failed: {str(read_error)}")
-        
-        # Test write operation
-        try:
-            print("🔍 Testing MongoDB write operation...")
-            await db.users.update_one(
-                {"user_id": user_id},
-                {"$set": user_doc},
-                upsert=True
-            )
-            print(f"🔍 User created/updated successfully!")
-        except Exception as write_error:
-            print(f"🚨 MongoDB write operation failed: {write_error}")
-            raise HTTPException(status_code=500, detail=f"MongoDB write failed: {str(write_error)}")
-        
-        print(f"🔍 About to create session token...")
-        # Create session token
-        session_token = f"session_{uuid.uuid4().hex[:12]}"
-        expires_at = datetime.now(timezone.utc) + timedelta(days=7)
-        
-        session_doc = {
-            "session_token": session_token,
-            "user_id": user_id,
-            "expires_at": expires_at.isoformat(),
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        
-        print(f"🔍 About to delete old sessions...")
-        await db.user_sessions.delete_many({"user_id": user_id})
-        print(f"🔍 Old sessions deleted!")
-        
-        print(f"🔍 About to insert new session...")
-        await db.user_sessions.insert_one(session_doc)
-        print(f"🔍 New session created!")
-        
-        response.set_cookie(
-            key="session_token",
-            value=session_token,
-            httponly=True,
-            secure=False,  # Changed to False for Vercel compatibility
-            samesite="lax",  # Changed to lax for better compatibility
-            path="/",
-            max_age=7 * 24 * 60 * 60
-        )
-        
-        user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
-        print(f"🔍 Returning user document: {user_doc}")
-        return user_doc
-        
+
+        print(f"🔍 Returning user data: {user_data}")
+        return user_data
+
     except Exception as e:
-        logger.error(f"Firebase login error: {e}")
         print(f"🚨 FIREBASE LOGIN ERROR: {e}")
-        import traceback
-        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
 
 @app.get("/api/me")
