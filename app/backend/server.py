@@ -446,7 +446,7 @@ async def simple_debug():
             "message": "Simple debug working",
             "timestamp": "2024-04-04T00:00:00Z",
             "db_available": db is not None,
-            "db_name": "database" if db else "none"
+            "db_name": "connected" if db is not None else "disconnected"
         }
     except Exception as e:
         return {
