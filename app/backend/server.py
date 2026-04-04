@@ -38,52 +38,42 @@ firebase_app = None
 
 print(f"🔍 Firebase Admin SDK initialization check:")
 print(f"   FIREBASE_ADMIN_JSON exists: {bool(firebase_admin_json)}")
+
+# Initialize Firebase Admin SDK
 if firebase_admin_json:
     print(f"   JSON length: {len(firebase_admin_json)}")
     print(f"   First 100 chars: {firebase_admin_json[:100]}")
-
-try:
-    if firebase_admin_json:
+    
+    try:
         import json
+        firebase_config = json.loads(firebase_admin_json)
+        print("✅ JSON parsing successful")
+        print(f"   Config keys: {list(firebase_config.keys())}")
+        print(f"   Project ID: {firebase_config.get('project_id', 'NOT_FOUND')}")
+        print(f"   Client email: {firebase_config.get('client_email', 'NOT_FOUND')}")
+        
+        # Check if app already exists
         try:
-            firebase_config = json.loads(firebase_admin_json)
-            print("✅ JSON parsing successful")
-            print(f"   Config keys: {list(firebase_config.keys())}")
-            print(f"   Project ID: {firebase_config.get('project_id', 'NOT_FOUND')}")
-            print(f"   Client email: {firebase_config.get('client_email', 'NOT_FOUND')}")
-            
+            firebase_app = firebase_admin.get_app()
+            print("✅ Using existing Firebase app")
+        except ValueError:
+            # App doesn't exist, initialize it
             cred = credentials.Certificate(firebase_config)
             firebase_app = firebase_admin.initialize_app(cred)
             print("✅ Firebase Admin SDK initialized from environment variable")
-        except json.JSONDecodeError as e:
-            print(f"❌ JSON parsing failed: {e}")
-            print(f"   First 200 chars: {firebase_admin_json[:200]}")
-        except Exception as e:
-            print(f"❌ Firebase initialization failed: {e}")
-            import traceback
-            traceback.print_exc()
-    else:
-        print("⚠️ FIREBASE_ADMIN_JSON not set")
-except Exception as e:
-    print(f"❌ Firebase initialization error: {e}")
-    try:
-        # Try to get existing app first
-        firebase_app = firebase_admin.get_app()
-        if firebase_app:
-            print("✅ Using existing Firebase app")
-        else:
-            # If no existing app, try to initialize
-            if firebase_admin_json:
-                try:
-                    cred = credentials.Certificate(firebase_config)
-                    firebase_app = firebase_admin.initialize_app(cred)
-                    print("✅ Firebase Admin SDK initialized from environment variable")
-                except Exception as init_error:
-                    print(f"❌ Firebase initialization failed: {init_error}")
-                    firebase_app = None
-    except:
+            
+    except json.JSONDecodeError as e:
+        print(f"❌ JSON parsing failed: {e}")
+        print(f"   First 200 chars: {firebase_admin_json[:200]}")
         firebase_app = None
-        print("❌ Firebase Admin SDK not available")
+    except Exception as e:
+        print(f"❌ Firebase initialization failed: {e}")
+        import traceback
+        traceback.print_exc()
+        firebase_app = None
+else:
+    print("⚠️ FIREBASE_ADMIN_JSON not set")
+    firebase_app = None
 
 app = FastAPI()
 print("🚀 FastAPI app created")
@@ -241,6 +231,10 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
     print("🚨🚨🚨 FIREBASE LOGIN ENDPOINT CALLED 🚨🚨🚨")
 
     try:
+        # Check if Firebase is initialized
+        if firebase_app is None:
+            raise HTTPException(status_code=500, detail="Firebase Admin SDK not initialized")
+        
         # Verify Firebase ID token
         decoded_token = firebase_auth.verify_id_token(firebase_request.idToken)
         print(f"🔍 Firebase token verified successfully!")
