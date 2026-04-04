@@ -39,14 +39,33 @@ firebase_app = None
 print(f"🔍 Firebase Admin SDK initialization check:")
 print(f"   FIREBASE_ADMIN_JSON exists: {bool(firebase_admin_json)}")
 
-# Initialize Firebase Admin SDK
+# Initialize Firebase Admin SDK with enhanced error handling
 if firebase_admin_json:
     print(f"   JSON length: {len(firebase_admin_json)}")
     print(f"   First 100 chars: {firebase_admin_json[:100]}")
     
     try:
         import json
-        firebase_config = json.loads(firebase_admin_json)
+        
+        # Get the raw JSON string
+        firebase_json_clean = firebase_admin_json.strip()
+        
+        # Handle different quote styles
+        if firebase_json_clean.startswith("'") and firebase_json_clean.endswith("'"):
+            firebase_json_clean = firebase_json_clean[1:-1]
+        elif firebase_json_clean.startswith('"') and firebase_json_clean.endswith('"'):
+            firebase_json_clean = firebase_json_clean[1:-1]
+        
+        # Parse the JSON
+        firebase_config = json.loads(firebase_json_clean)
+        
+        # Fix the private key format - replace escaped newlines with actual newlines
+        if 'private_key' in firebase_config:
+            private_key = firebase_config['private_key']
+            # Convert \\n to actual newlines for PEM format
+            private_key = private_key.replace('\\n', '\n')
+            firebase_config['private_key'] = private_key
+        
         print("✅ JSON parsing successful")
         print(f"   Config keys: {list(firebase_config.keys())}")
         print(f"   Project ID: {firebase_config.get('project_id', 'NOT_FOUND')}")
@@ -64,6 +83,7 @@ if firebase_admin_json:
             
     except json.JSONDecodeError as e:
         print(f"❌ JSON parsing failed: {e}")
+        print(f"   Error position: {e.pos if hasattr(e, 'pos') else 'unknown'}")
         print(f"   First 200 chars: {firebase_admin_json[:200]}")
         firebase_app = None
     except Exception as e:
@@ -74,6 +94,13 @@ if firebase_admin_json:
 else:
     print("⚠️ FIREBASE_ADMIN_JSON not set")
     firebase_app = None
+
+# Additional debugging for Firebase initialization
+print(f"🔍 Final Firebase app status: {firebase_app is not None}")
+if firebase_app:
+    print(f"🔍 Firebase app name: {firebase_app.name}")
+else:
+    print("🚨 Firebase app is None - this will cause authentication failures")
 
 app = FastAPI()
 print("🚀 FastAPI app created")
