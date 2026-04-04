@@ -88,6 +88,12 @@ const ProtectedRoute = ({ children }) => {
       return;
     }
     
+    // Quick check - if user already exists, no need to verify
+    if (user) {
+      setIsChecking(false);
+      return;
+    }
+    
     const verify = async () => {
       const isAuthenticated = await checkAuth();
       if (!isAuthenticated) {
@@ -96,10 +102,10 @@ const ProtectedRoute = ({ children }) => {
       setIsChecking(false);
     };
     verify();
-  }, [checkAuth, navigate, location.state]);
+  }, [user, checkAuth, navigate, location.state]);
 
   // Show loading while checking authentication or if auth context is loading
-  if ((loading || isChecking) && !location.state?.user) {
+  if ((loading || isChecking) && !location.state?.user && !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F4F0EB]">
         <div className="text-center">

@@ -26,17 +26,20 @@ export const AuthProvider = ({ children }) => {
     // Check if there's a session cookie (for returning users)
     console.log("🔍 Checking for session cookie...");
     
-    // Debug: Check if cookie exists in document
+    // Quick cookie check first (no API call)
     const cookies = document.cookie.split(';').map(cookie => cookie.trim());
     const sessionCookie = cookies.find(cookie => cookie.startsWith('session_token='));
-    console.log("🍪 Browser cookies:", cookies);
-    console.log("🍪 Session cookie found:", !!sessionCookie);
-    if (sessionCookie) {
-      console.log("🍪 Session cookie value:", sessionCookie.split('=')[1]);
+    
+    if (!sessionCookie) {
+      console.log("🍪 No session cookie found, user not authenticated");
+      setLoading(false);
+      return false;
     }
+
+    console.log("🍪 Session cookie found, validating...");
     
     // Add a small delay to ensure cookies are available
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 50));
     
     try {
       const response = await fetch(`${API}/auth/me`, {
@@ -172,34 +175,35 @@ export const AuthProvider = ({ children }) => {
           setLoading(false);
         }
       } else {
-        // User is signed out - but first check if we have a valid session
-        console.log("👋 Firebase says user signed out, checking session cookie...");
-        
-        // Don't immediately clear user state - check session first
-        try {
-          const response = await fetch(`${API}/auth/me`, {
-            method: "GET",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json"
-            }
-          });
+        // User is signed out - only check session if we don't already have a user
+        if (!user) {
+          console.log("👋 Firebase says user signed out, checking session cookie...");
+          
+          try {
+            const response = await fetch(`${API}/auth/me`, {
+              method: "GET",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json"
+              }
+            });
 
-          if (response.ok) {
-            const userData = await response.json();
-            console.log("📋 Found valid session despite Firebase signout, keeping user data:", userData);
-            setUser(userData);
-            setLoading(false);
-            return; // Don't clear the user state
-          } else {
-            console.log("❌ No valid session found, clearing user state");
+            if (response.ok) {
+              const userData = await response.json();
+              console.log("📋 Found valid session despite Firebase signout:", userData.email);
+              setUser(userData);
+              setLoading(false);
+              return; // Don't clear the user state
+            }
+          } catch (error) {
+            console.log("🔍 Session check failed:", error.message);
           }
-        } catch (error) {
-          console.log("🔍 Session check failed, clearing user state:", error.message);
         }
         
         // Only clear user state if we don't have a valid session
-        setUser(null);
+        if (!user) {
+          setUser(null);
+        }
         setLoading(false);
       }
     });
