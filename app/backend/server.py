@@ -25,6 +25,9 @@ memory_storage = {
     "notes": []
 }
 
+# In-memory session store for real user authentication
+session_store = {}
+
 # MongoDB connection with error handling
 try:
     mongo_url = os.environ['MONGO_URL']
@@ -298,17 +301,44 @@ async def get_current_user(request: Request) -> User:
     if not session_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    # For now, use fallback authentication since MongoDB has issues
-    # Accept both test tokens and real Firebase session tokens
+    # Check if session exists in session store (real Firebase users)
+    if session_token in session_store:
+        session_data = session_store[session_token]
+        
+        # Check if session is expired
+        expires_at = session_data.get("expires_at")
+        if expires_at:
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at)
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at < datetime.now(timezone.utc):
+                # Session expired, remove it
+                del session_store[session_token]
+                raise HTTPException(status_code=401, detail="Session expired")
+        
+        # Return real user data
+        user_obj = User(
+            user_id=session_data["user_id"],
+            email=session_data["email"],
+            name=session_data["name"],
+            picture=session_data["picture"],
+            created_at=session_data.get("created_at", datetime.now(timezone.utc).isoformat())
+        )
+        print(f"🔍 DEBUG: Returning real user from session: {user_obj.email}")
+        return user_obj
+    
+    # Fallback for test sessions (remove this in production)
     if session_token.startswith("session_") and len(session_token) > 20:
-        # Return a mock user for testing - in production, you'd validate against MongoDB
-        return User(
+        print("🔍 DEBUG: Using fallback test user (should not happen in production)")
+        user_obj = User(
             user_id="user_test123456789",
             email="test@example.com", 
             name="Test User",
             picture="https://example.com/photo.jpg",
             created_at=datetime.now(timezone.utc).isoformat()
         )
+        return user_obj
     
     raise HTTPException(status_code=401, detail="Invalid session")
 
@@ -497,6 +527,17 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
         session_token = f"session_{uuid.uuid4().hex[:24]}"
         expires_at = datetime.now(timezone.utc) + timedelta(days=7)
         
+        # Store session data in memory
+        session_store[session_token] = {
+            "user_id": user_id,
+            "email": email,
+            "name": name,
+            "picture": picture,
+            "expires_at": expires_at.isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        print(f"✅ Stored real user session for: {email}")
+        
         # Set session cookie
         response.set_cookie(
             key="session_token",
@@ -525,7 +566,7 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
         raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
 
 @app.get("/api/me")
-async def get_current_user(request: Request):
+async def get_current_user_endpoint(request: Request):
     """Get current authenticated user (for session verification)"""
     session_token = request.cookies.get("session_token")
     
@@ -537,18 +578,40 @@ async def get_current_user(request: Request):
     if not session_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    # For now, use fallback authentication since MongoDB has issues
-    # Accept both test tokens and real Firebase session tokens
+    # Check if session exists in session store (real Firebase users)
+    if session_token in session_store:
+        session_data = session_store[session_token]
+        
+        # Check if session is expired
+        expires_at = session_data.get("expires_at")
+        if expires_at:
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at)
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at < datetime.now(timezone.utc):
+                # Session expired, remove it
+                del session_store[session_token]
+                raise HTTPException(status_code=401, detail="Session expired")
+        
+        # Return real user data as JSON
+        return {
+            "user_id": session_data["user_id"],
+            "email": session_data["email"],
+            "name": session_data["name"],
+            "picture": session_data["picture"],
+            "created_at": session_data.get("created_at")
+        }
+    
+    # Fallback for test sessions (remove this in production)
     if session_token.startswith("session_") and len(session_token) > 20:
-        # Return a mock user for testing - in production, you'd validate against MongoDB
-        user_data = {
+        return {
             "user_id": "user_test123456789",
             "email": "test@example.com", 
             "name": "Test User",
             "picture": "https://example.com/photo.jpg",
             "created_at": datetime.now(timezone.utc).isoformat()
         }
-        return user_data
     
     raise HTTPException(status_code=401, detail="Invalid session")
 
@@ -730,13 +793,20 @@ async def router_test():
 
 # Notes endpoints (secured by user)
 @api_router.post("/notes")
-async def create_note(note_data: NoteCreate, request: Request, user: User = Depends(get_current_user)):
+async def create_note(note_data: NoteCreate, request: Request):
     """Create a new note for the authenticated user"""
     print(f"🔍 DEBUG: POST /api/notes called")
-    print(f"🔍 DEBUG: User: {user}")
     print(f"🔍 DEBUG: Note data: {note_data}")
     print(f"🔍 DEBUG: Request method: {request.method}")
     print(f"🔍 DEBUG: Request URL: {request.url}")
+    
+    # Get current user
+    try:
+        user = await get_current_user(request)
+        print(f"🔍 DEBUG: User authenticated: {user.email}")
+    except HTTPException as e:
+        print(f"🔍 DEBUG: Authentication failed: {e.detail}")
+        raise e
     
     # Create note in memory storage
     note_doc = {
@@ -758,8 +828,16 @@ async def create_note(note_data: NoteCreate, request: Request, user: User = Depe
     return note_doc
 
 @api_router.get("/notes")
-async def get_notes(user: User = Depends(get_current_user)):
+async def get_notes(request: Request):
     """Get all notes for the authenticated user"""
+    # Get current user
+    try:
+        user = await get_current_user(request)
+        print(f"🔍 DEBUG: Get notes for user: {user.email}")
+    except HTTPException as e:
+        print(f"🔍 DEBUG: Authentication failed for get notes: {e.detail}")
+        raise e
+    
     # Use in-memory storage for development
     user_notes = [note for note in memory_storage["notes"] if note.get("user_id") == user.user_id]
     return {"notes": user_notes}
@@ -832,15 +910,31 @@ async def get_shared_note(share_link: str):
 
 # Folders endpoints (secured by user)
 @api_router.get("/folders")
-async def get_folders(user: User = Depends(get_current_user)):
+async def get_folders(request: Request):
     """Get all folders for the authenticated user"""
+    # Get current user
+    try:
+        user = await get_current_user(request)
+        print(f"🔍 DEBUG: Get folders for user: {user.email}")
+    except HTTPException as e:
+        print(f"🔍 DEBUG: Authentication failed for get folders: {e.detail}")
+        raise e
+    
     # Use in-memory storage for development
     user_folders = [folder for folder in memory_storage["folders"] if folder.get("user_id") == user.user_id]
     return {"folders": user_folders}
 
 @api_router.post("/folders")
-async def create_folder(folder_data: FolderCreate, user: User = Depends(get_current_user)):
+async def create_folder(folder_data: FolderCreate, request: Request):
     """Create a new folder for the authenticated user"""
+    # Get current user
+    try:
+        user = await get_current_user(request)
+        print(f"🔍 DEBUG: Create folder for user: {user.email}")
+    except HTTPException as e:
+        print(f"🔍 DEBUG: Authentication failed for create folder: {e.detail}")
+        raise e
+    
     # Create folder in memory storage
     folder_doc = {
         "folder_id": f"folder_{uuid.uuid4().hex[:12]}",
