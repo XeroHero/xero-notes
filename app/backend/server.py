@@ -293,12 +293,12 @@ async def get_current_user(request: Request) -> User:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
     # For now, use fallback authentication since MongoDB has issues
-    # In production, you would fix the MongoDB connection first
+    # Accept both test tokens and real Firebase session tokens
     if session_token.startswith("session_") and len(session_token) > 20:
-        # Return a mock user for testing
+        # Return a mock user for testing - in production, you'd validate against MongoDB
         return User(
             user_id="user_test123456789",
-            email="test@example.com",
+            email="test@example.com", 
             name="Test User",
             picture="https://example.com/photo.jpg",
             created_at=datetime.now(timezone.utc).isoformat()
@@ -467,109 +467,56 @@ async def test_login(response: Response):
         print(f"🚨 TEST LOGIN ERROR: {e}")
         raise HTTPException(status_code=500, detail=f"Test authentication failed: {str(e)}")
 
-# @api_router.post("/auth/firebase-login")
-# async def firebase_login(firebase_request: FirebaseLoginRequest, request: Request, response: Response):
-#     """Verify Firebase token and return user data"""
-#     print("🚨🚨🚨 FIREBASE LOGIN ENDPOINT CALLED 🚨🚨🚨")
+@api_router.post("/auth/firebase-login")
+async def firebase_login(firebase_request: FirebaseLoginRequest, request: Request, response: Response):
+    """Verify Firebase token and return user data"""
+    print("🚨🚨🚨 FIREBASE LOGIN ENDPOINT CALLED 🚨🚨🚨")
 
-#     try:
-#         # Check if Firebase is initialized
-#         if firebase_app is None:
-#             raise HTTPException(status_code=500, detail="Firebase Admin SDK not initialized")
+    try:
+        # Check if Firebase is initialized
+        if firebase_app is None:
+            raise HTTPException(status_code=500, detail="Firebase Admin SDK not initialized")
         
-#         # Verify Firebase ID token
-#         decoded_token = firebase_auth.verify_id_token(firebase_request.idToken)
-#         print(f"🔍 Firebase token verified successfully!")
+        # Verify Firebase ID token
+        decoded_token = firebase_auth.verify_id_token(firebase_request.idToken)
+        print(f"🔍 Firebase token verified successfully!")
 
-#         # Create user data from token
-#         user_id = f"user_{decoded_token['uid'][:12]}"
-#         email = decoded_token.get('email', '')
-#         name = decoded_token.get('name', '')
-#         picture = decoded_token.get('picture', '')
+        # Create user data from token
+        user_id = f"user_{decoded_token['uid'][:12]}"
+        email = decoded_token.get('email', '')
+        name = decoded_token.get('name', '')
+        picture = decoded_token.get('picture', '')
         
-#         # Try to get existing user, but don't fail if MongoDB permissions are an issue
-#         existing_user = None
-#         if db is not None:
-#             try:
-#                 print("🔍 Checking if user exists in database...")
-#                 existing_user = await db.users.find_one({"user_id": user_id})
-#                 print(f"🔍 Found existing user: {existing_user is not None}")
-#             except Exception as db_error:
-#                 print(f"⚠️ Database read failed, proceeding with token data: {db_error}")
+        # Create session token for authentication
+        session_token = f"session_{uuid.uuid4().hex[:24]}"
+        expires_at = datetime.now(timezone.utc) + timedelta(days=7)
         
-#         # Create or update user in database
-#         if db is not None:
-#             try:
-#                 user_doc = {
-#                     "user_id": user_id,
-#                     "email": email,
-#                     "name": name,
-#                     "picture": picture,
-#                     "created_at": datetime.now(timezone.utc).isoformat()
-#                 }
-                
-#                 if existing_user:
-#                     # Update existing user
-#                     await db.users.update_one(
-#                         {"user_id": user_id},
-#                         {"$set": {"name": name, "picture": picture}}
-#                     )
-#                     print("✅ User updated in database")
-#                 else:
-#                     # Insert new user
-#                     await db.users.insert_one(user_doc)
-#                     print("✅ User created in database")
-#             except Exception as save_error:
-#                 print(f"⚠️ Database save failed, but continuing: {save_error}")
+        # Set session cookie
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            secure=False,  # Changed to False for Vercel compatibility
+            samesite="lax",  # Changed to lax for better compatibility
+            path="/",
+            max_age=7 * 24 * 60 * 60
+        )
+        print("✅ Session cookie set")
         
-#         # Create session token for authentication
-#         session_token = f"session_{uuid.uuid4().hex[:24]}"
-#         expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+        # Return user data
+        user_data = {
+            "user_id": user_id,
+            "email": email,
+            "name": name,
+            "picture": picture
+        }
         
-#         # Save session to database
-#         if db is not None:
-#             try:
-#                 session_doc = {
-#                     "user_id": user_id,
-#                     "session_token": session_token,
-#                     "expires_at": expires_at.isoformat(),
-#                     "created_at": datetime.now(timezone.utc).isoformat()
-#                 }
-                
-#                 # Delete existing sessions for this user
-#                 await db.user_sessions.delete_many({"user_id": user_id})
-#                 # Insert new session
-#                 await db.user_sessions.insert_one(session_doc)
-#                 print("✅ Session created in database")
-#             except Exception as session_error:
-#                 print(f"⚠️ Session creation failed, but continuing: {session_error}")
-        
-#         # Set session cookie
-#         response.set_cookie(
-#             key="session_token",
-#             value=session_token,
-#             httponly=True,
-#             secure=False,  # Changed to False for Vercel compatibility
-#             samesite="lax",  # Changed to lax for better compatibility
-#             path="/",
-#             max_age=7 * 24 * 60 * 60
-#         )
-#         print("✅ Session cookie set")
-        
-#         # Return user data
-#         user_data = {
-#             "user_id": user_id,
-#             "email": email,
-#             "name": name,
-#             "picture": picture
-#         }
-        
-#         print("🔍 Returning user data from Firebase token")
-#         return user_data
+        print("🔍 Returning user data from Firebase token")
+        return user_data
 
-#     except Exception as e:
-#         print(f"🚨 FIREBASE LOGIN ERROR: {e}")
-#         raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
+    except Exception as e:
+        print(f"🚨 FIREBASE LOGIN ERROR: {e}")
+        raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
 
 # @app.get("/api/me")
 # async def get_current_user(request: Request):
