@@ -74,13 +74,15 @@ except Exception as e:
         else:
             # If no existing app, try to initialize
             if firebase_admin_json:
-                import json
-                firebase_config = json.loads(firebase_admin_json)
-                cred = credentials.Certificate(firebase_config)
-                firebase_app = firebase_admin.initialize_app(cred)
-                print("✅ Firebase Admin SDK initialized from environment variable")
-            else:
-                print("⚠️ No Firebase config available")
+                if (userData && typeof userData === 'object' && userData.user_id && userData.email) {
+                console.log("✅ Valid user data received");
+                setUser(userData);
+                setLoading(false);
+                return userData;
+            } else {
+                console.log("❌ Invalid response format:", userData);
+                throw new Error(`Backend login failed: ${response.status} Invalid response format`);
+            }
     except:
         firebase_app = None
         print("❌ Firebase Admin SDK not available")
