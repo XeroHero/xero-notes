@@ -247,13 +247,41 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
 
         # Create user data from token
         user_id = f"user_{decoded_token['uid'][:12]}"
-        user_data = {
-            "user_id": user_id,
-            "email": decoded_token.get('email', ''),
-            "name": decoded_token.get('name', ''),
-            "picture": decoded_token.get('picture', ''),
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
+        email = decoded_token.get('email', '')
+        name = decoded_token.get('name', '')
+        picture = decoded_token.get('picture', '')
+        
+        print(f"🔍 About to check if user exists in database...")
+        
+        # Test read operation first
+        try:
+            print("🔍 Testing MongoDB read operation...")
+            existing_user = await db.users.find_one({"user_id": user_id})
+            print(f"🔍 Read operation successful! Found user: {existing_user}")
+        except Exception as read_error:
+            print(f"🚨 MongoDB read operation failed: {read_error}")
+            raise HTTPException(status_code=500, detail=f"MongoDB read failed: {str(read_error)}")
+        
+        # Create user data (only if user doesn't exist)
+        if not existing_user:
+            print("🔍 User doesn't exist, creating new user...")
+            user_data = {
+                "user_id": user_id,
+                "email": email,
+                "name": name,
+                "picture": picture,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            print(f"🔍 Returning new user data: {user_data}")
+            return user_data
+        else:
+            print("🔍 User already exists, returning existing data")
+            return {
+                "user_id": user_id,
+                "email": email,
+                "name": name,
+                "picture": picture
+            }
 
         print(f"🔍 Returning user data: {user_data}")
         return user_data
