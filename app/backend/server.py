@@ -438,6 +438,16 @@ async def debug_env():
         "firebase_length": len(os.environ.get('FIREBASE_ADMIN_JSON', ''))
     }
 
+@app.get("/api/simple-debug")
+async def simple_debug():
+    """Simple debug endpoint"""
+    return {
+        "message": "Simple debug working",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "db_available": db is not None,
+        "db_name": str(type(db).__name__ if db else "None")
+    }
+
 @app.get("/api/debug-mongo")
 async def debug_mongo():
     """Debug MongoDB connection details"""
