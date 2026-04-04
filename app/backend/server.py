@@ -38,20 +38,26 @@ firebase_app = None
 
 print(f"🔍 Firebase Admin SDK initialization check:")
 print(f"   FIREBASE_ADMIN_JSON exists: {bool(firebase_admin_json)}")
+print(f"   Raw env var type: {type(firebase_admin_json)}")
+print(f"   Raw env var length: {len(firebase_admin_json) if firebase_admin_json else 0}")
 
-# Initialize Firebase Admin SDK with multiple fallback methods
+# Debug: Print first 200 chars of raw environment variable
 if firebase_admin_json:
-    print(f"   JSON length: {len(firebase_admin_json)}")
-    print(f"   First 100 chars: {firebase_admin_json[:100]}")
-    
+    print(f"   Raw first 200 chars: {repr(firebase_admin_json[:200])}")
+
+# Initialize Firebase Admin SDK with comprehensive error handling
+if firebase_admin_json:
     try:
         import json
+        import ast
         
         # Method 1: Try direct JSON parsing
         try:
             firebase_config = json.loads(firebase_admin_json)
             print("✅ Method 1: Direct JSON parsing successful")
-        except:
+        except json.JSONDecodeError as e:
+            print(f"❌ Method 1 failed: {e}")
+            
             # Method 2: Handle quote wrapping
             firebase_json_clean = firebase_admin_json.strip()
             if firebase_json_clean.startswith("'") and firebase_json_clean.endswith("'"):
@@ -62,41 +68,68 @@ if firebase_admin_json:
             try:
                 firebase_config = json.loads(firebase_json_clean)
                 print("✅ Method 2: Quote unwrapping successful")
-            except:
+            except json.JSONDecodeError as e2:
+                print(f"❌ Method 2 failed: {e2}")
+                
                 # Method 3: Try to fix escape sequences
                 try:
-                    # Replace various escape patterns
                     firebase_json_clean = firebase_json_clean.replace('\\n', '\n').replace('\\\\n', '\n')
                     firebase_config = json.loads(firebase_json_clean)
                     print("✅ Method 3: Escape sequence fixing successful")
-                except:
+                except json.JSONDecodeError as e3:
+                    print(f"❌ Method 3 failed: {e3}")
+                    
                     # Method 4: Use ast.literal_eval as last resort
-                    import ast
-                    firebase_config = ast.literal_eval(firebase_admin_json)
-                    print("✅ Method 4: AST literal eval successful")
+                    try:
+                        firebase_config = ast.literal_eval(firebase_admin_json)
+                        print("✅ Method 4: AST literal eval successful")
+                    except Exception as e4:
+                        print(f"❌ Method 4 failed: {e4}")
+                        
+                        # Method 5: Try manual parsing for Vercel format
+                        try:
+                            # Split by lines and reconstruct
+                            lines = firebase_admin_json.split('\\n')
+                            reconstructed = ''
+                            for line in lines:
+                                if line.strip().startswith('"') and line.strip().endswith('"'):
+                                    reconstructed += line.strip()[1:-1] + '\n'
+                                else:
+                                    reconstructed += line + '\n'
+                            firebase_config = json.loads(reconstructed.strip())
+                            print("✅ Method 5: Manual line reconstruction successful")
+                        except Exception as e5:
+                            print(f"❌ Method 5 failed: {e5}")
+                            firebase_config = None
         
-        # Fix private key format regardless of method used
-        if 'private_key' in firebase_config and isinstance(firebase_config['private_key'], str):
-            private_key = firebase_config['private_key']
-            # Ensure proper newlines for PEM format
-            if '\\n' in private_key:
-                private_key = private_key.replace('\\n', '\n')
-            firebase_config['private_key'] = private_key
-        
-        print("✅ JSON parsing successful")
-        print(f"   Config keys: {list(firebase_config.keys())}")
-        print(f"   Project ID: {firebase_config.get('project_id', 'NOT_FOUND')}")
-        print(f"   Client email: {firebase_config.get('client_email', 'NOT_FOUND')}")
-        
-        # Check if app already exists
-        try:
-            firebase_app = firebase_admin.get_app()
-            print("✅ Using existing Firebase app")
-        except ValueError:
-            # App doesn't exist, initialize it
-            cred = credentials.Certificate(firebase_config)
-            firebase_app = firebase_admin.initialize_app(cred)
-            print("✅ Firebase Admin SDK initialized from environment variable")
+        if firebase_config:
+            # Fix private key format regardless of method used
+            if 'private_key' in firebase_config and isinstance(firebase_config['private_key'], str):
+                private_key = firebase_config['private_key']
+                # Fix Vercel double backslash issue: replace \\\\n with \n, then \\n with \n
+                if '\\\\n' in private_key:
+                    private_key = private_key.replace('\\\\n', '\n')
+                if '\\n' in private_key:
+                    private_key = private_key.replace('\\n', '\n')
+                firebase_config['private_key'] = private_key
+            
+            print("✅ JSON parsing successful")
+            print(f"   Config keys: {list(firebase_config.keys()) if firebase_config else 'None'}")
+            print(f"   Project ID: {firebase_config.get('project_id', 'NOT_FOUND') if firebase_config else 'None'}")
+            print(f"   Client email: {firebase_config.get('client_email', 'NOT_FOUND') if firebase_config else 'None'}")
+            
+            # Check if app already exists
+            try:
+                firebase_app = firebase_admin.get_app()
+                print("✅ Using existing Firebase app")
+            except ValueError:
+                # App doesn't exist, initialize it
+                if firebase_config:
+                    cred = credentials.Certificate(firebase_config)
+                    firebase_app = firebase_admin.initialize_app(cred)
+                    print("✅ Firebase Admin SDK initialized from environment variable")
+                else:
+                    print("❌ Firebase config is None, cannot initialize")
             
     except Exception as e:
         print(f"❌ Firebase initialization failed: {e}")
