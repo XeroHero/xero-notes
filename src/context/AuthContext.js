@@ -17,9 +17,35 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
 
-    // Firebase auth state listener will handle this
+    // First check if we already have a user in state
+    if (user) {
+      return true;
+    }
+
+    // Check if there's a session cookie (for returning users)
+    try {
+      const response = await fetch(`${API}/auth/me`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        console.log("📋 Found valid session, setting user data:", userData);
+        setUser(userData);
+        setLoading(false);
+        return true;
+      }
+    } catch (error) {
+      console.log("🔍 No valid session found:", error.message);
+    }
+
+    // Firebase auth state listener will handle this for new logins
     setLoading(false);
-    return !!user;
+    return false;
   }, [user]);
 
   const logout = useCallback(async () => {

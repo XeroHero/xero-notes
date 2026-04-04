@@ -79,29 +79,44 @@ const ProtectedRoute = ({ children }) => {
   const { user, loading, checkAuth } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     // If user data was passed from AuthCallback, skip auth check
-    if (location.state?.user) return;
+    if (location.state?.user) {
+      setIsChecking(false);
+      return;
+    }
     
     const verify = async () => {
       const isAuthenticated = await checkAuth();
       if (!isAuthenticated) {
         navigate("/login", { replace: true });
       }
+      setIsChecking(false);
     };
     verify();
   }, [checkAuth, navigate, location.state]);
 
-  if (loading && !location.state?.user) {
+  // Show loading while checking authentication or if auth context is loading
+  if ((loading || isChecking) && !location.state?.user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F4F0EB]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E06A4F]"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E06A4F] mx-auto"></div>
+          <p className="mt-4 text-[#78716C] font-body">Checking authentication...</p>
+        </div>
       </div>
     );
   }
 
-  return children;
+  // If we have user data from state or auth context, render children
+  if (location.state?.user || user) {
+    return children;
+  }
+
+  // This should not be reached due to the redirect above, but as a fallback
+  return null;
 };
 
 // App Router
