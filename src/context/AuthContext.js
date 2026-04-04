@@ -25,6 +25,19 @@ export const AuthProvider = ({ children }) => {
 
     // Check if there's a session cookie (for returning users)
     console.log("🔍 Checking for session cookie...");
+    
+    // Debug: Check if cookie exists in document
+    const cookies = document.cookie.split(';').map(cookie => cookie.trim());
+    const sessionCookie = cookies.find(cookie => cookie.startsWith('session_token='));
+    console.log("🍪 Browser cookies:", cookies);
+    console.log("🍪 Session cookie found:", !!sessionCookie);
+    if (sessionCookie) {
+      console.log("🍪 Session cookie value:", sessionCookie.split('=')[1]);
+    }
+    
+    // Add a small delay to ensure cookies are available
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     try {
       const response = await fetch(`${API}/auth/me`, {
         method: "GET",
@@ -34,6 +47,8 @@ export const AuthProvider = ({ children }) => {
         }
       });
 
+      console.log("📡 Session validation response status:", response.status);
+
       if (response.ok) {
         const userData = await response.json();
         console.log("📋 Found valid session, setting user data:", userData);
@@ -42,6 +57,8 @@ export const AuthProvider = ({ children }) => {
         return true;
       } else {
         console.log("❌ Session validation failed:", response.status);
+        const errorText = await response.text();
+        console.log("❌ Error response:", errorText);
       }
     } catch (error) {
       console.log("🔍 No valid session found:", error.message);
@@ -158,7 +175,7 @@ export const AuthProvider = ({ children }) => {
         // User is signed out - but first check if we have a valid session
         console.log("👋 Firebase says user signed out, checking session cookie...");
         
-        // Check if we have a valid session cookie even if Firebase says we're signed out
+        // Don't immediately clear user state - check session first
         try {
           const response = await fetch(`${API}/auth/me`, {
             method: "GET",
@@ -170,15 +187,18 @@ export const AuthProvider = ({ children }) => {
 
           if (response.ok) {
             const userData = await response.json();
-            console.log("📋 Found valid session despite Firebase signout, setting user data:", userData);
+            console.log("📋 Found valid session despite Firebase signout, keeping user data:", userData);
             setUser(userData);
             setLoading(false);
             return; // Don't clear the user state
+          } else {
+            console.log("❌ No valid session found, clearing user state");
           }
         } catch (error) {
-          console.log("🔍 No valid session found, clearing user state:", error.message);
+          console.log("🔍 Session check failed, clearing user state:", error.message);
         }
         
+        // Only clear user state if we don't have a valid session
         setUser(null);
         setLoading(false);
       }
