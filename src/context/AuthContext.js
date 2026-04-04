@@ -19,10 +19,12 @@ export const AuthProvider = ({ children }) => {
 
     // First check if we already have a user in state
     if (user) {
+      console.log("✅ User already in state, authenticated:", user.email);
       return true;
     }
 
     // Check if there's a session cookie (for returning users)
+    console.log("🔍 Checking for session cookie...");
     try {
       const response = await fetch(`${API}/auth/me`, {
         method: "GET",
@@ -38,6 +40,8 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         setLoading(false);
         return true;
+      } else {
+        console.log("❌ Session validation failed:", response.status);
       }
     } catch (error) {
       console.log("🔍 No valid session found:", error.message);
@@ -151,8 +155,30 @@ export const AuthProvider = ({ children }) => {
           setLoading(false);
         }
       } else {
-        // User is signed out
-        console.log("👋 User signed out");
+        // User is signed out - but first check if we have a valid session
+        console.log("👋 Firebase says user signed out, checking session cookie...");
+        
+        // Check if we have a valid session cookie even if Firebase says we're signed out
+        try {
+          const response = await fetch(`${API}/auth/me`, {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json"
+            }
+          });
+
+          if (response.ok) {
+            const userData = await response.json();
+            console.log("📋 Found valid session despite Firebase signout, setting user data:", userData);
+            setUser(userData);
+            setLoading(false);
+            return; // Don't clear the user state
+          }
+        } catch (error) {
+          console.log("🔍 No valid session found, clearing user state:", error.message);
+        }
+        
         setUser(null);
         setLoading(false);
       }
