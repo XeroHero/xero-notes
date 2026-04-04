@@ -39,7 +39,7 @@ firebase_app = None
 print(f"🔍 Firebase Admin SDK initialization check:")
 print(f"   FIREBASE_ADMIN_JSON exists: {bool(firebase_admin_json)}")
 
-# Initialize Firebase Admin SDK with enhanced error handling
+# Initialize Firebase Admin SDK with multiple fallback methods
 if firebase_admin_json:
     print(f"   JSON length: {len(firebase_admin_json)}")
     print(f"   First 100 chars: {firebase_admin_json[:100]}")
@@ -47,23 +47,40 @@ if firebase_admin_json:
     try:
         import json
         
-        # Get the raw JSON string
-        firebase_json_clean = firebase_admin_json.strip()
+        # Method 1: Try direct JSON parsing
+        try:
+            firebase_config = json.loads(firebase_admin_json)
+            print("✅ Method 1: Direct JSON parsing successful")
+        except:
+            # Method 2: Handle quote wrapping
+            firebase_json_clean = firebase_admin_json.strip()
+            if firebase_json_clean.startswith("'") and firebase_json_clean.endswith("'"):
+                firebase_json_clean = firebase_json_clean[1:-1]
+            elif firebase_json_clean.startswith('"') and firebase_json_clean.endswith('"'):
+                firebase_json_clean = firebase_json_clean[1:-1]
+            
+            try:
+                firebase_config = json.loads(firebase_json_clean)
+                print("✅ Method 2: Quote unwrapping successful")
+            except:
+                # Method 3: Try to fix escape sequences
+                try:
+                    # Replace various escape patterns
+                    firebase_json_clean = firebase_json_clean.replace('\\n', '\n').replace('\\\\n', '\n')
+                    firebase_config = json.loads(firebase_json_clean)
+                    print("✅ Method 3: Escape sequence fixing successful")
+                except:
+                    # Method 4: Use ast.literal_eval as last resort
+                    import ast
+                    firebase_config = ast.literal_eval(firebase_admin_json)
+                    print("✅ Method 4: AST literal eval successful")
         
-        # Handle different quote styles
-        if firebase_json_clean.startswith("'") and firebase_json_clean.endswith("'"):
-            firebase_json_clean = firebase_json_clean[1:-1]
-        elif firebase_json_clean.startswith('"') and firebase_json_clean.endswith('"'):
-            firebase_json_clean = firebase_json_clean[1:-1]
-        
-        # Parse the JSON
-        firebase_config = json.loads(firebase_json_clean)
-        
-        # Fix the private key format - replace escaped newlines with actual newlines
-        if 'private_key' in firebase_config:
+        # Fix private key format regardless of method used
+        if 'private_key' in firebase_config and isinstance(firebase_config['private_key'], str):
             private_key = firebase_config['private_key']
-            # Convert \\n to actual newlines for PEM format
-            private_key = private_key.replace('\\n', '\n')
+            # Ensure proper newlines for PEM format
+            if '\\n' in private_key:
+                private_key = private_key.replace('\\n', '\n')
             firebase_config['private_key'] = private_key
         
         print("✅ JSON parsing successful")
@@ -81,11 +98,6 @@ if firebase_admin_json:
             firebase_app = firebase_admin.initialize_app(cred)
             print("✅ Firebase Admin SDK initialized from environment variable")
             
-    except json.JSONDecodeError as e:
-        print(f"❌ JSON parsing failed: {e}")
-        print(f"   Error position: {e.pos if hasattr(e, 'pos') else 'unknown'}")
-        print(f"   First 200 chars: {firebase_admin_json[:200]}")
-        firebase_app = None
     except Exception as e:
         print(f"❌ Firebase initialization failed: {e}")
         import traceback
