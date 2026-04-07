@@ -49,10 +49,15 @@ const Dashboard = () => {
 
     // Retry mechanism for API calls
     const fetchWithRetry = async (url, retries = 3, delay = 1000) => {
+      // Add cache-busting timestamp to prevent serving cached responses
+      const timestamp = Date.now();
+      const cacheBustingUrl = `${url}${url.includes('?') ? '&' : '?'}_t=${timestamp}`;
+      
       for (let i = 0; i < retries; i++) {
         try {
-          const response = await fetch(url, {
+          const response = await fetch(cacheBustingUrl, {
             credentials: "include",
+            cache: 'no-store', // Prevent caching
           });
           if (response.ok) {
             return response;
