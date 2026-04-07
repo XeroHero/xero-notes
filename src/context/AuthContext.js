@@ -167,7 +167,7 @@ export const AuthProvider = ({ children }) => {
     });
 
     return () => unsubscribe();
-  }, [loginWithToken, user]);
+  }, [loginWithToken]);
 
   return (
     <AuthContext.Provider value={{ user, loading, checkAuth, logout, loginWithToken, setUserData }}>

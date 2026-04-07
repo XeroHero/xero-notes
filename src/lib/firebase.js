@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 // Firebase Configuration
 const firebaseConfig = {
@@ -17,6 +17,15 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Auth
 export const auth = getAuth(app);
+
+// Set auth persistence to local storage for session retention on refresh
+setPersistence(auth, browserLocalPersistence)
+  .then(() => {
+    console.log("Firebase auth persistence set to local storage");
+  })
+  .catch((error) => {
+    console.error("Error setting auth persistence:", error);
+  });
 
 // Google Auth Provider
 export const googleProvider = new GoogleAuthProvider();
