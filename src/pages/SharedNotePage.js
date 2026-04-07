@@ -15,19 +15,15 @@ const SharedNotePage = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    console.log("SharedNotePage - shareLink from params:", shareLink);
     const fetchSharedNote = async () => {
       try {
-        console.log("Fetching shared note from:", `${API}/shared/${shareLink}`);
         const response = await fetch(`${API}/shared/${shareLink}`);
 
         if (!response.ok) {
-          console.log("Response not ok:", response.status, response.statusText);
           throw new Error("Note not found or no longer shared");
         }
 
         const data = await response.json();
-        console.log("Shared note data received:", data);
         setNote(data.note);
         setAuthor(data.author);
       } catch (err) {

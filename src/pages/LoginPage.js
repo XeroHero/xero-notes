@@ -1,9 +1,13 @@
 import { useState } from "react";
-import { Button } from "../components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
+// Components
+import { Button } from "../components/ui/button";
+
+// Context & Services
 import { useAuth } from "../context/AuthContext";
 import { signInWithGoogle } from "../lib/firebase";
-import { toast } from "sonner";
 
 const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -13,39 +17,28 @@ const LoginPage = () => {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
-      console.log("🔥 Starting Google login process...");
       const { user, idToken } = await signInWithGoogle();
-      console.log("✅ Google sign-in successful:", user.email);
       
       // Send token to backend for session creation
-      console.log("🔐 Sending token to backend...");
       await loginWithToken(idToken, user);
-      console.log("✅ Backend authentication successful");
       
       // Show success message
-      console.log("🎉 Authentication successful! User should now be logged in.");
+      toast.success("Successfully signed in!");
       
-      // Simple navigation without timeout
+      // Navigate to dashboard
       try {
         navigate("/dashboard");
-        console.log("🧭 Navigating to dashboard...");
       } catch (navError) {
-        console.error("❌ Navigation error:", navError);
+        console.error("Navigation error:", navError);
         // Fallback: reload page to trigger auth state
         window.location.href = "/dashboard";
       }
       
-      console.log("🏁 Login process completed");
-      
     } catch (error) {
-      console.error("❌ Google login error:", error);
-      try {
-        toast.error(error.code === "auth/popup-closed-by-user" 
-          ? "Sign-in cancelled" 
-          : "Failed to sign in with Google");
-      } catch (toastError) {
-        console.log("⚠️ Error toast failed:", toastError);
-      }
+      console.error("Google login error:", error);
+      toast.error(error.code === "auth/popup-closed-by-user" 
+        ? "Sign-in cancelled" 
+        : "Failed to sign in with Google");
       setIsLoading(false);
     }
   };

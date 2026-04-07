@@ -2,7 +2,8 @@ import { createContext, useContext, useState, useCallback, useEffect } from "rea
 import { auth } from "../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
-const API = "/api";  // Use relative URL to call same-domain backend
+// API Configuration
+const API = "/api";
 
 const AuthContext = createContext(null);
 
@@ -50,21 +51,14 @@ export const AuthProvider = ({ children }) => {
         }
       });
 
-      console.log("📡 Session validation response status:", response.status);
-
       if (response.ok) {
         const userData = await response.json();
-        console.log("📋 Found valid session, setting user data:", userData);
         setUser(userData);
         setLoading(false);
         return true;
-      } else {
-        console.log("❌ Session validation failed:", response.status);
-        const errorText = await response.text();
-        console.log("❌ Error response:", errorText);
       }
     } catch (error) {
-      console.log("🔍 No valid session found:", error.message);
+      // No valid session found
     }
 
     // Firebase auth state listener will handle this for new logins
@@ -93,11 +87,6 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithToken = useCallback(async (idToken, firebaseUser) => {
     try {
-      console.log("🔐 loginWithToken called with:", { 
-        idToken: idToken.substring(0, 20) + "...", 
-        email: firebaseUser.email 
-      });
-      
       const response = await fetch(`${API}/auth/firebase-login`, {
         method: "POST",
         headers: { 
@@ -108,35 +97,13 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ idToken, firebaseUser }),
       });
 
-      console.log("📡 Backend response status:", response.status);
-      console.log("📡 Backend response headers:", Object.fromEntries(response.headers.entries()));
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.log("❌ Backend error response:", errorText);
-        console.log("❌ Response status:", response.status);
-        console.log("❌ Response headers:", Object.fromEntries(response.headers.entries()));
         throw new Error(`Backend login failed: ${response.status} ${response.statusText}`);
       }
 
       const userData = await response.json();
-      console.log("📋 User data received:", userData);
-      console.log("📋 User data type:", typeof userData);
-      console.log("📋 User data keys:", userData ? Object.keys(userData) : "null");
-
-      // Check if userData has any function properties that shouldn't be there
-      if (userData && typeof userData === 'object') {
-        for (const [key, value] of Object.entries(userData)) {
-          if (typeof value === 'function') {
-            console.log(`⚠️ Found function property: ${key} =`, value);
-          }
-        }
-      }
-
-      console.log("👤 Setting user state...");
       setUser(userData);
-      console.log("✅ User state set successfully");
-      
       setLoading(false);
       return userData;
     } catch (error) {
@@ -149,13 +116,10 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Listen to Firebase auth state changes
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log("🔥 Firebase auth state changed:", firebaseUser?.email || "null");
-      
       if (firebaseUser) {
         // User is signed in, get ID token and authenticate with backend
         try {
           const idToken = await firebaseUser.getIdToken();
-          console.log("🔐 Got ID token, attempting backend login...");
           
           // Only login if we're not already in the process of logging in
           if (!user || user.email !== firebaseUser.email) {
@@ -165,20 +129,15 @@ export const AuthProvider = ({ children }) => {
               displayName: firebaseUser.displayName,
               photoURL: firebaseUser.photoURL,
             });
-            console.log("✅ Backend login completed via auth state listener");
-          } else {
-            console.log("ℹ️ User already logged in, skipping duplicate login");
           }
         } catch (error) {
-          console.error("❌ Auth state change error:", error);
+          console.error("Auth state change error:", error);
           setUser(null);
           setLoading(false);
         }
       } else {
         // User is signed out - only check session if we don't already have a user
         if (!user) {
-          console.log("👋 Firebase says user signed out, checking session cookie...");
-          
           try {
             const response = await fetch(`${API}/auth/me`, {
               method: "GET",
@@ -190,7 +149,6 @@ export const AuthProvider = ({ children }) => {
 
             if (response.ok) {
               const userData = await response.json();
-              console.log("📋 Found valid session despite Firebase signout:", userData.email);
               setUser(userData);
               setLoading(false);
               return; // Don't clear the user state

@@ -1,22 +1,20 @@
-import { useEffect, useState, useCallback, useRef } from "react";
-import "./App.css";
+import { useEffect, useState, useRef } from "react";
 import { HashRouter as Router, Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { Analytics } from "@vercel/analytics/react";
 
-const API = "/api";  // Use relative URL to avoid CORS issues
-
 // Components
-import SimpleAuthDebug from "./components/SimpleAuthDebug";
-import SimpleDashboard from "./components/SimpleDashboard";
-import TestPage from "./components/TestPage";
+import { Toaster } from "./components/ui/sonner";
 import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
 import SharedNotePage from "./pages/SharedNotePage";
+import StatusPage from "./pages/StatusPage";
 
-// Auth Context
+// Context
 import { AuthProvider, useAuth } from "./context/AuthContext";
+
+// Styles
+import "./App.css";
 
 // Auth Callback Component
 const AuthCallback = () => {
@@ -137,11 +135,9 @@ function AppRouter() {
 
   return (
     <Routes>
-      <Route path="/test" element={<TestPage />} />
-      <Route path="/simple-auth-debug" element={<SimpleAuthDebug />} />
-      <Route path="/simple-dashboard" element={<SimpleDashboard />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/shared/:shareLink" element={<SharedNotePage />} />
+      <Route path="/status" element={<StatusPage />} />
       <Route
         path="/dashboard"
         element={

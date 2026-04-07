@@ -1,13 +1,15 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
+import { Menu, Plus } from "lucide-react";
+
+// Components
 import { useAuth } from "../context/AuthContext";
 import Sidebar from "../components/Sidebar";
 import NoteEditor from "../components/NoteEditor";
 import { Button } from "../components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../components/ui/sheet";
-import { Menu, Plus } from "lucide-react";
 
 const Dashboard = () => {
   const { user, logout, setUserData } = useAuth();
@@ -194,9 +196,7 @@ const Dashboard = () => {
       if (!response.ok) throw new Error("Failed to share note");
 
       const data = await response.json();
-      console.log("Share response data:", data);
       const shareUrl = `${window.location.origin}/shared/${data.share_link}`;
-      console.log("Generated share URL:", shareUrl);
 
       await navigator.clipboard.writeText(shareUrl);
       toast.success("Share link copied to clipboard!");
