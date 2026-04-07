@@ -36,19 +36,10 @@ client = None
 firebase_app = None
 session_store = {}
 
-# MongoDB connection
-if MONGO_AVAILABLE:
-    try:
-        mongo_url = os.environ.get('MONGO_URL')
-        if mongo_url:
-            client = AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=5000)
-            client.admin.command('ping')
-            db = client[os.environ.get('DB_NAME', 'xero_notes')]
-            print(" MongoDB connected successfully")
-        else:
-            print(" MONGO_URL not found")
-    except Exception as e:
-        print(f" MongoDB connection failed: {e}")
+# MongoDB connection - disabled for now
+print(" MongoDB connection disabled - using memory storage")
+db = None
+client = None
 
 # Firebase initialization
 if FIREBASE_AVAILABLE:
@@ -59,8 +50,14 @@ if FIREBASE_AVAILABLE:
             cred = credentials.Certificate(firebase_config)
             firebase_app = firebase_admin.initialize_app(cred)
             print(" Firebase Admin SDK initialized")
+        else:
+            print(" FIREBASE_ADMIN_JSON not found")
+            firebase_app = None
     except Exception as e:
         print(f" Firebase initialization failed: {e}")
+        firebase_app = None
+else:
+    firebase_app = None
 
 # Data models
 class User:
@@ -148,10 +145,52 @@ async def firebase_login(request: Request, response: Response):
         idToken = body.get("idToken")
         firebaseUser = body.get("firebaseUser", {})
         
-        if not idToken or not firebase_app:
+        if not idToken:
             raise HTTPException(status_code=400, detail="Invalid request")
         
-        # Verify Firebase token
+        # If Firebase Admin SDK is not available, use the firebaseUser data directly
+        if not firebase_app:
+            print(" Firebase Admin SDK not available, using client-side user data")
+            
+            # Create user data from client-side Firebase user
+            user_id = f"user_{firebaseUser.get('uid', '')[:12]}"
+            email = firebaseUser.get('email', '')
+            name = firebaseUser.get('displayName', '')
+            picture = firebaseUser.get('photoURL', '')
+            
+            # Create session token
+            session_token = f"session_{uuid.uuid4().hex[:24]}"
+            expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+            
+            # Store session in memory (fallback)
+            session_store[session_token] = {
+                "user_id": user_id,
+                "email": email,
+                "name": name,
+                "picture": picture,
+                "expires_at": expires_at.isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            # Set session cookie
+            response.set_cookie(
+                key="session_token",
+                value=session_token,
+                expires=expires_at,
+                httponly=True,
+                secure=False,  # Set to True in production with HTTPS
+                samesite="lax"
+            )
+            
+            return {
+                "user_id": user_id,
+                "email": email,
+                "name": name,
+                "picture": picture,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+        
+        # Verify Firebase token (if Admin SDK is available)
         decoded_token = firebase_auth.verify_id_token(idToken)
         
         # Create user data
