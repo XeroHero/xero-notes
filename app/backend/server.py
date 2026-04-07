@@ -129,7 +129,14 @@ if firebase_admin_json:
                                     "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
                                     "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40xero-notes.iam.gserviceaccount.com",
                                     "universe_domain": "googleapis.com"
-                                }
+                                session_store[session_token] = {
+                    "user_id": user_id,
+                    "email": email,
+                    "name": name,
+                    "picture": picture,
+                    "expires_at": expires_at.isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
                                 
                                 # Try to extract private key from environment variable
                                 if '-----BEGIN PRIVATE KEY-----' in firebase_admin_json:
@@ -192,7 +199,14 @@ if firebase_admin_json:
                         "auth_provider_x509_cert_url": firebase_auth_provider,
                         "client_x509_cert_url": firebase_client_cert,
                         "universe_domain": firebase_universe
-                    }
+                    session_store[session_token] = {
+                    "user_id": user_id,
+                    "email": email,
+                    "name": name,
+                    "picture": picture,
+                    "expires_at": expires_at.isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
                     print("✅ Method 7: Individual environment variables successful")
                 else:
                     print("❌ Method 7: No private key available")
@@ -437,6 +451,13 @@ async def test_login(response: Response):
                     "name": name,
                     "picture": picture,
                     "created_at": datetime.now(timezone.utc).isoformat()
+                session_store[session_token] = {
+                    "user_id": user_id,
+                    "email": email,
+                    "name": name,
+                    "picture": picture,
+                    "expires_at": expires_at.isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat()
                 }
                 
                 existing_user = await db.users.find_one({"user_id": user_id})
@@ -464,6 +485,13 @@ async def test_login(response: Response):
                 session_doc = {
                     "user_id": user_id,
                     "session_token": session_token,
+                    "expires_at": expires_at.isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                session_store[session_token] = {
+                    "user_id": user_id,
+                    "email": email,
+                    "name": name,
+                    "picture": picture,
                     "expires_at": expires_at.isoformat(),
                     "created_at": datetime.now(timezone.utc).isoformat()
                 }
@@ -527,17 +555,43 @@ async def firebase_login(firebase_request: FirebaseLoginRequest, request: Reques
         session_token = f"session_{uuid.uuid4().hex[:24]}"
         expires_at = datetime.now(timezone.utc) + timedelta(days=7)
         
-        # Store session data in memory
-        session_store[session_token] = {
-            "user_id": user_id,
-            "email": email,
-            "name": name,
-            "picture": picture,
-            "expires_at": expires_at.isoformat(),
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        print(f"✅ Stored real user session for: {email}")
-        
+        # Store session data in database
+        if db is not None:
+            try:
+                session_doc = {
+                    "user_id": user_id,
+                    "session_token": session_token,
+                    "expires_at": expires_at.isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                # Delete existing sessions for this user
+                await db.user_sessions.delete_many({"user_id": user_id})
+                # Insert new session
+                await db.user_sessions.insert_one(session_doc)
+                print(f" Firebase session created in database for: {email}")
+            except Exception as session_error:
+                print(f" Session creation failed, falling back to memory: {session_error}")
+                # Fallback to memory storage if database fails
+                session_store[session_token] = {
+                    "user_id": user_id,
+                    "email": email,
+                    "name": name,
+                    "picture": picture,
+                    "expires_at": expires_at.isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+        else:
+            # Fallback to memory storage if no database
+            session_store[session_token] = {
+                "user_id": user_id,
+                "email": email,
+                "name": name,
+                "picture": picture,
+                "expires_at": expires_at.isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+        print(f" Session stored for: {email}")
         # Set session cookie
         response.set_cookie(
             key="session_token",
@@ -578,7 +632,43 @@ async def get_current_user_endpoint(request: Request):
     if not session_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    # Check if session exists in session store (real Firebase users)
+    # FIRST: Check database sessions (persistent)
+    if db is not None:
+        try:
+            session_doc = await db.user_sessions.find_one({"session_token": session_token})
+            if session_doc:
+                # Check if session is expired
+                expires_at = session_doc.get("expires_at")
+                if expires_at:
+                    if isinstance(expires_at, str):
+                        expires_at = datetime.fromisoformat(expires_at)
+                    if expires_at.tzinfo is None:
+                        expires_at = expires_at.replace(tzinfo=timezone.utc)
+                    if expires_at < datetime.now(timezone.utc):
+                        # Session expired, remove it
+                        await db.user_sessions.delete_one({"session_token": session_token})
+                    else:
+                        # Session valid, find user data
+                        user_doc = await db.users.find_one({"user_id": session_doc["user_id"]})
+                        if user_doc:
+                            return {
+                                "user_id": user_doc["user_id"],
+                                "email": user_doc["email"],
+                                "name": user_doc.get("name", ""),
+                                "picture": user_doc.get("picture", ""),
+                                "created_at": user_doc.get("created_at")
+                            session_store[session_token] = {
+                    "user_id": user_id,
+                    "email": email,
+                    "name": name,
+                    "picture": picture,
+                    "expires_at": expires_at.isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+        except Exception as e:
+            print(f"Database session check failed: {e}")
+    
+    # SECOND: Check memory sessions (fallback)
     if session_token in session_store:
         session_data = session_store[session_token]
         
@@ -636,6 +726,13 @@ async def simple_test():
                     "MONGO_URL_set": bool(os.environ.get('MONGO_URL')),
                     "DB_NAME_set": bool(os.environ.get('DB_NAME')),
                     "FIREBASE_ADMIN_JSON_set": bool(os.environ.get('FIREBASE_ADMIN_JSON'))
+                session_store[session_token] = {
+                    "user_id": user_id,
+                    "email": email,
+                    "name": name,
+                    "picture": picture,
+                    "expires_at": expires_at.isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat()
                 }
             }
         }
