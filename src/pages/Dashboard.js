@@ -24,32 +24,61 @@ const Dashboard = () => {
 
   // Set user from location state if available
   useEffect(() => {
+    console.log("User state check - user:", user, "location.state:", location.state);
     if (location.state?.user && !user) {
+      console.log("Setting user data from location state:", location.state.user);
       setUserData(location.state.user);
     }
   }, [location.state, user, setUserData]);
 
   const currentUser = user || location.state?.user;
   const userId = currentUser?.user_id;
+  
+  console.log("Current user:", currentUser);
+  console.log("User ID:", userId);
 
   // Load folders and notes from MongoDB API
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      console.log("No userId available, skipping data load");
+      return;
+    }
 
+    console.log("Loading data for userId:", userId);
     setIsLoading(true);
+
+    // Retry mechanism for API calls
+    const fetchWithRetry = async (url, retries = 3, delay = 1000) => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const response = await fetch(url, {
+            credentials: "include",
+          });
+          if (response.ok) {
+            return response;
+          }
+          console.log(`Attempt ${i + 1} failed for ${url}, status: ${response.status}`);
+        } catch (error) {
+          console.log(`Attempt ${i + 1} error for ${url}:`, error);
+        }
+        
+        if (i < retries - 1) {
+          await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
+        }
+      }
+      throw new Error(`Failed to fetch ${url} after ${retries} attempts`);
+    };
 
     // Load folders from API
     const loadFolders = async () => {
       try {
-        const response = await fetch("/api/folders", {
-          credentials: "include",
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setFolders(data.folders || []);
-        } else {
-          setFolders([]);
-        }
+        console.log("Fetching folders...");
+        const response = await fetchWithRetry("/api/folders");
+        console.log("Folders response status:", response.status);
+        
+        const data = await response.json();
+        console.log("Folders data:", data);
+        setFolders(data.folders || []);
       } catch (error) {
         console.error("Folders loading error:", error);
         setFolders([]);
@@ -59,20 +88,17 @@ const Dashboard = () => {
     // Load notes from API
     const loadNotes = async () => {
       try {
-        const response = await fetch("/api/notes", {
-          credentials: "include",
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setNotes(data.notes || []);
-        } else {
-          console.error("Failed to load notes");
-          setNotes([]);
-        }
-        setIsLoading(false);
+        console.log("Fetching notes...");
+        const response = await fetchWithRetry("/api/notes");
+        console.log("Notes response status:", response.status);
+        
+        const data = await response.json();
+        console.log("Notes data:", data);
+        setNotes(data.notes || []);
       } catch (error) {
         console.error("Notes loading error:", error);
         setNotes([]);
+      } finally {
         setIsLoading(false);
       }
     };
@@ -82,6 +108,7 @@ const Dashboard = () => {
 
     // Polling to refresh data every 30 seconds
     const intervalId = setInterval(() => {
+      console.log("Polling for data refresh...");
       loadFolders();
       loadNotes();
     }, 30000);
