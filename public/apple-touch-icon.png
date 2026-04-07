@@ -1,0 +1,21 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="96" cy="96" r="96" fill="#3B82F6"/>
+  
+  <!-- Note paper -->
+  <rect x="48" y="36" width="96" height="120" rx="12" fill="white"/>
+  
+  <!-- Note lines -->
+  <line x1="66" y1="60" x2="126" y2="60" stroke="#E5E7EB" stroke-width="6"/>
+  <line x1="66" y1="78" x2="126" y2="78" stroke="#E5E7EB" stroke-width="6"/>
+  <line x1="66" y1="96" x2="126" y2="96" stroke="#E5E7EB" stroke-width="6"/>
+  <line x1="66" y1="114" x2="126" y2="114" stroke="#E5E7EB" stroke-width="6"/>
+  <line x1="66" y1="132" x2="102" y2="132" stroke="#E5E7EB" stroke-width="6"/>
+  
+  <!-- Folded corner -->
+  <path d="M120 36L144 60L120 60V36Z" fill="#F3F4F6"/>
+  
+  <!-- Pen/marker -->
+  <rect x="108" y="84" width="12" height="48" rx="6" fill="#EF4444" transform="rotate(45 114 108)"/>
+  <rect x="102" y="126" width="12" height="18" rx="6" fill="#DC2626" transform="rotate(45 108 135)"/>
+</svg>

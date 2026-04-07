@@ -24,31 +24,22 @@ const Dashboard = () => {
 
   // Set user from location state if available
   useEffect(() => {
-    console.log("User state check - user:", user, "location.state:", location.state);
     if (location.state?.user && !user) {
-      console.log("Setting user data from location state:", location.state.user);
       setUserData(location.state.user);
     }
   }, [location.state, user, setUserData]);
 
   const currentUser = user || location.state?.user;
   const userId = currentUser?.user_id;
-  
-  console.log("Current user:", currentUser);
-  console.log("User ID:", userId);
 
   // Load folders and notes from MongoDB API
   useEffect(() => {
-    if (!userId) {
-      console.log("No userId available, skipping data load");
-      return;
-    }
+    if (!userId) return;
 
-    console.log("Loading data for userId:", userId);
     setIsLoading(true);
 
     // Retry mechanism for API calls
-    const fetchWithRetry = async (url, retries = 3, delay = 1000) => {
+    const fetchWithRetry = async (url, retries = 2, delay = 1000) => {
       // Add cache-busting timestamp to prevent serving cached responses
       const timestamp = Date.now();
       const cacheBustingUrl = `${url}${url.includes('?') ? '&' : '?'}_t=${timestamp}`;
@@ -57,18 +48,17 @@ const Dashboard = () => {
         try {
           const response = await fetch(cacheBustingUrl, {
             credentials: "include",
-            cache: 'no-store', // Prevent caching
+            cache: 'no-store',
           });
           if (response.ok) {
             return response;
           }
-          console.log(`Attempt ${i + 1} failed for ${url}, status: ${response.status}`);
         } catch (error) {
-          console.log(`Attempt ${i + 1} error for ${url}:`, error);
+          if (i === retries - 1) throw error;
         }
         
         if (i < retries - 1) {
-          await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
       throw new Error(`Failed to fetch ${url} after ${retries} attempts`);
@@ -77,12 +67,8 @@ const Dashboard = () => {
     // Load folders from API
     const loadFolders = async () => {
       try {
-        console.log("Fetching folders...");
         const response = await fetchWithRetry("/api/folders");
-        console.log("Folders response status:", response.status);
-        
         const data = await response.json();
-        console.log("Folders data:", data);
         setFolders(data.folders || []);
       } catch (error) {
         console.error("Folders loading error:", error);
@@ -93,12 +79,8 @@ const Dashboard = () => {
     // Load notes from API
     const loadNotes = async () => {
       try {
-        console.log("Fetching notes...");
         const response = await fetchWithRetry("/api/notes");
-        console.log("Notes response status:", response.status);
-        
         const data = await response.json();
-        console.log("Notes data:", data);
         setNotes(data.notes || []);
       } catch (error) {
         console.error("Notes loading error:", error);
@@ -113,7 +95,6 @@ const Dashboard = () => {
 
     // Polling to refresh data every 30 seconds
     const intervalId = setInterval(() => {
-      console.log("Polling for data refresh...");
       loadFolders();
       loadNotes();
     }, 30000);
