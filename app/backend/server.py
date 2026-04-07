@@ -303,6 +303,98 @@ async def health_check():
         "firebase": "initialized" if firebase_app else "not initialized"
     }
 
+# Folders endpoints
+@app.get("/api/folders")
+async def get_folders(request: Request):
+    user = await get_current_user(request)
+    # Return empty folders list for now (memory storage)
+    return []
+
+@app.post("/api/folders")
+async def create_folder(request: Request):
+    user = await get_current_user(request)
+    body = await request.json()
+    # Create folder logic here
+    return {"id": f"folder_{uuid.uuid4().hex[:8]}", "name": body.get("name", "")}
+
+# Notes endpoints
+@app.get("/api/notes")
+async def get_notes(request: Request):
+    user = await get_current_user(request)
+    # Return empty notes list for now (memory storage)
+    return []
+
+@app.post("/api/notes")
+async def create_note(request: Request):
+    user = await get_current_user(request)
+    body = await request.json()
+    # Create note logic here
+    return {
+        "id": f"note_{uuid.uuid4().hex[:8]}", 
+        "title": body.get("title", ""),
+        "content": body.get("content", ""),
+        "folder_id": body.get("folder_id"),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+
+@app.put("/api/notes/{note_id}")
+async def update_note(note_id: str, request: Request):
+    user = await get_current_user(request)
+    body = await request.json()
+    # Update note logic here
+    return {
+        "id": note_id,
+        "title": body.get("title", ""),
+        "content": body.get("content", ""),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+
+@app.delete("/api/folders/{folder_id}")
+async def delete_folder(folder_id: str, request: Request):
+    user = await get_current_user(request)
+    # Delete folder logic here
+    return {"message": "Folder deleted"}
+
+@app.post("/api/notes/{note_id}/share")
+async def share_note(note_id: str, request: Request):
+    user = await get_current_user(request)
+    # Generate share link logic here
+    share_link = f"share_{uuid.uuid4().hex[:12]}"
+    return {"share_link": share_link, "url": f"/shared/{share_link}"}
+
+@app.get("/api/shared/{share_link}")
+async def get_shared_note(share_link: str):
+    # Get shared note logic here (no authentication required)
+    return {
+        "id": f"note_{uuid.uuid4().hex[:8]}",
+        "title": "Shared Note",
+        "content": "This is a shared note content",
+        "share_link": share_link
+    }
+
+# Additional health check endpoints
+@app.get("/api/health/db")
+async def health_db():
+    return {
+        "status": "connected" if db else "disconnected",
+        "type": "memory" if not db else "mongodb"
+    }
+
+@app.get("/api/health/firebase")
+async def health_firebase():
+    return {
+        "status": "initialized" if firebase_app else "not initialized",
+        "admin_sdk": firebase_app is not None
+    }
+
+@app.get("/api/health/env")
+async def health_env():
+    return {
+        "environment": os.environ.get("NODE_ENV", "development"),
+        "mongo_url_set": bool(os.environ.get("MONGO_URL")),
+        "firebase_config_set": bool(os.environ.get("FIREBASE_ADMIN_JSON"))
+    }
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
