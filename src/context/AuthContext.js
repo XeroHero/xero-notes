@@ -3,7 +3,9 @@ import { auth } from "../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
 // API Configuration
-const API = "/api";
+const API = process.env.NODE_ENV === 'production' 
+  ? '/api'  // Vercel serverless functions
+  : '/api';  // Local development proxy
 
 const AuthContext = createContext(null);
 
