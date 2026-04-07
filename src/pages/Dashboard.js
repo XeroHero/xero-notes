@@ -328,9 +328,19 @@ const Dashboard = () => {
           </SheetContent>
         </Sheet>
 
-        <h1 className="font-heading font-semibold text-[#1C1917]">
-          {selectedNote?.title || "Xero Notes"}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="font-heading font-semibold text-[#1C1917]">
+            {selectedNote?.title || "Xero Notes"}
+          </h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/status")}
+            className="text-xs text-[#78716C] hover:text-[#1C1917]"
+          >
+            Status
+          </Button>
+        </div>
 
         <Button
           variant="ghost"

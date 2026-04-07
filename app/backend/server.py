@@ -971,6 +971,139 @@ async def delete_folder(folder_id: str, user: User = Depends(get_current_user)):
 app.include_router(api_router)
 # app.include_router(firebase_auth_router)  # Commented out to prevent conflicts
 
+# Health Check Endpoints
+@api_router.get("/health")
+async def health_check():
+    """Overall system health check"""
+    import time
+    start_time = time.time()
+    
+    checks = {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "uptime": time.time() - start_time,
+        "version": "1.0.0"
+    }
+    
+    return checks
+
+@api_router.get("/health/db")
+async def database_health():
+    """Database connection health check"""
+    try:
+        if db is None:
+            return {
+                "status": "unhealthy",
+                "message": "Database not connected",
+                "details": "MongoDB connection failed during startup"
+            }
+        
+        # Test database connection
+        start_time = time.time()
+        await db.command('ping')
+        response_time = (time.time() - start_time) * 1000  # Convert to milliseconds
+        
+        return {
+            "status": "healthy",
+            "message": "Database connected",
+            "response_time": round(response_time, 2),
+            "details": f"MongoDB connection successful in {round(response_time, 2)}ms"
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "message": "Database connection failed",
+            "details": str(e)
+        }
+
+@api_router.get("/health/firebase")
+async def firebase_health():
+    """Firebase configuration health check"""
+    try:
+        if firebase_app is None:
+            return {
+                "status": "unhealthy",
+                "message": "Firebase not initialized",
+                "details": "Firebase Admin SDK failed to initialize"
+            }
+        
+        return {
+            "status": "healthy",
+            "message": "Firebase connected",
+            "details": "Firebase Admin SDK initialized successfully"
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "message": "Firebase check failed",
+            "details": str(e)
+        }
+
+@api_router.get("/health/env")
+async def environment_health():
+    """Environment variables health check"""
+    try:
+        env_vars = {
+            "environment": os.environ.get('VERCEL_ENV', 'development'),
+            "platform": "Vercel" if os.environ.get('VERCEL_ENV') else "Local",
+            "node_version": os.environ.get('NODE_VERSION', 'Unknown'),
+            "deployment": os.environ.get('VERCEL_URL', 'local')
+        }
+        
+        missing_vars = []
+        required_vars = ['MONGO_URL', 'DB_NAME', 'FIREBASE_ADMIN_JSON']
+        
+        for var in required_vars:
+            if not os.environ.get(var):
+                missing_vars.append(var)
+        
+        if missing_vars:
+            return {
+                "status": "warning",
+                "message": "Some environment variables missing",
+                "details": f"Missing: {', '.join(missing_vars)}",
+                **env_vars
+            }
+        
+        return {
+            "status": "healthy",
+            "message": "Environment configured",
+            **env_vars
+        }
+    except Exception as e:
+        return {
+            "status": "warning",
+            "message": "Environment check failed",
+            "details": str(e)
+        }
+
+# Debug endpoints
+@api_router.get("/debug/env")
+async def debug_environment():
+    """Debug endpoint to check environment variables (safe)"""
+    return {
+        "deployment_url": os.environ.get('VERCEL_URL', 'unknown'),
+        "mongo_url_set": bool(os.environ.get('MONGO_URL')),
+        "mongo_url_length": len(os.environ.get('MONGO_URL', '')),
+        "mongo_url_starts_with": os.environ.get('MONGO_URL', '')[:20] + '...' if os.environ.get('MONGO_URL') else 'not_set',
+        "db_name_set": bool(os.environ.get('DB_NAME')),
+        "db_name": os.environ.get('DB_NAME', 'not_set'),
+        "firebase_set": bool(os.environ.get('FIREBASE_ADMIN_JSON')),
+        "firebase_length": len(os.environ.get('FIREBASE_ADMIN_JSON', '')),
+        "vercel_env": os.environ.get('VERCEL_ENV', 'not_set'),
+        "node_version": os.environ.get('NODE_VERSION', 'not_set')
+    }
+
+@api_router.get("/debug/headers")
+async def debug_headers(request: Request):
+    """Debug endpoint to check request headers"""
+    return {
+        "headers": dict(request.headers),
+        "client_ip": request.client.host if request.client else "unknown",
+        "method": request.method,
+        "url": str(request.url)
+    }
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
