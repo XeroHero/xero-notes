@@ -193,4 +193,3 @@ function App() {
 }
 
 export default App;
-export { API };
