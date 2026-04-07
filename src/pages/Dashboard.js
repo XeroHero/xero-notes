@@ -116,6 +116,8 @@ const Dashboard = () => {
       if (!response.ok) throw new Error("Failed to create note");
 
       const newNote = await response.json();
+      // Add the new note to the local state immediately
+      setNotes(prev => [...prev, newNote]);
       setSelectedNote(newNote);
       setIsMobileSidebarOpen(false);
       toast.success("Note created");
@@ -155,6 +157,9 @@ const Dashboard = () => {
 
       if (!response.ok) throw new Error("Failed to delete note");
 
+      // Remove the note from local state immediately
+      setNotes(prev => prev.filter(note => note.note_id !== noteId));
+      
       if (selectedNote?.note_id === noteId) {
         setSelectedNote(null);
       }
@@ -199,6 +204,10 @@ const Dashboard = () => {
       });
 
       if (!response.ok) throw new Error("Failed to create folder");
+
+      const newFolder = await response.json();
+      // Add the new folder to the local state immediately
+      setFolders(prev => [...prev, newFolder]);
       toast.success("Folder created");
     } catch (error) {
       console.error("Create folder error:", error);
@@ -216,6 +225,9 @@ const Dashboard = () => {
 
       if (!response.ok) throw new Error("Failed to delete folder");
 
+      // Remove the folder from local state immediately
+      setFolders(prev => prev.filter(folder => folder.folder_id !== folderId));
+      
       if (selectedFolder === folderId) {
         setSelectedFolder(null);
       }
