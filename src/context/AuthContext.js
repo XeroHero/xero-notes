@@ -14,25 +14,24 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const checkAuth = useCallback(async () => {
-    // Check for session_id in URL hash first (Emergent OAuth flow)
-    if (window.location.hash?.includes("session_id=")) {
-      setLoading(false);
-      return false;
-    }
-
     // First check if we already have a user in state
     if (user) {
       console.log("User already in state, authenticated:", user.email);
       return true;
     }
 
-    // Add a small delay to ensure Firebase auth state is ready
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Check for session_id in URL hash first (Emergent OAuth flow)
+    if (window.location.hash?.includes("session_id=")) {
+      setLoading(false);
+      return false;
+    }
+
+    // Wait for Firebase auth state to be ready
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     // Check if there's a session cookie (for returning users)
     console.log("Checking for session cookie...");
     
-    // Quick cookie check first (no API call)
     const cookies = document.cookie.split(';').map(cookie => cookie.trim());
     const sessionCookie = cookies.find(cookie => cookie.startsWith('session_token='));
     
@@ -44,8 +43,8 @@ export const AuthProvider = ({ children }) => {
 
     console.log("Session cookie found, validating...");
     
-    // Add a small delay to ensure cookies are available
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // Add delay to ensure cookies are available
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     try {
       const response = await fetch(`${API}/auth/me`, {
@@ -63,13 +62,13 @@ export const AuthProvider = ({ children }) => {
         return true;
       }
     } catch (error) {
-      // No valid session found
+      console.log("Session validation failed:", error.message);
     }
 
     // Firebase auth state listener will handle this for new logins
     setLoading(false);
     return false;
-  }, [user]);
+  }, []);
 
   const logout = useCallback(async () => {
     try {
@@ -127,9 +126,6 @@ export const AuthProvider = ({ children }) => {
         // User is signed in, get ID token and authenticate with backend
         try {
           const idToken = await firebaseUser.getIdToken();
-          
-          // Always authenticate with backend when Firebase user is available
-          // This ensures session persistence works correctly
           await loginWithToken(idToken, {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
@@ -143,33 +139,12 @@ export const AuthProvider = ({ children }) => {
         }
       } else {
         // User is signed out - check if we have a valid session cookie
-        try {
-          const response = await fetch(`${API}/auth/me`, {
-            method: "GET",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json"
-            }
-          });
-
-          if (response.ok) {
-            const userData = await response.json();
-            setUser(userData);
-            setLoading(false);
-            return; // Don't clear the user state
-          }
-        } catch (error) {
-          console.log("Session check failed:", error.message);
-        }
-        
-        // No valid session found
-        setUser(null);
-        setLoading(false);
+        await checkAuth();
       }
     });
 
     return () => unsubscribe();
-  }, [loginWithToken]);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, loading, checkAuth, logout, loginWithToken, setUserData }}>
