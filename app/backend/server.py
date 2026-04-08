@@ -389,8 +389,15 @@ async def health_firebase():
 
 @app.get("/api/health/env")
 async def health_env():
+    # Check multiple environment variables to detect production
+    is_production = (
+        os.environ.get("NODE_ENV") == "production" or
+        os.environ.get("VERCEL_ENV") == "production" or
+        os.environ.get("ENVIRONMENT") == "production"
+    )
+    
     return {
-        "environment": os.environ.get("NODE_ENV", "development"),
+        "environment": "production" if is_production else "development",
         "mongo_url_set": bool(os.environ.get("MONGO_URL")),
         "firebase_config_set": bool(os.environ.get("FIREBASE_ADMIN_JSON"))
     }
