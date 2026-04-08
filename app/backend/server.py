@@ -179,7 +179,8 @@ async def firebase_login(request: Request, response: Response):
                 expires=expires_at,
                 httponly=True,
                 secure=True,  # Required for production HTTPS
-                samesite="lax"
+                samesite="lax",
+                domain="*.xerohero.dev"
             )
             
             return {
@@ -248,6 +249,7 @@ async def firebase_login(request: Request, response: Response):
             secure=True,  # Required for production HTTPS
             samesite="lax",
             path="/",
+            domain=".xerohero.dev",  # Explicit domain for production
             max_age=7 * 24 * 60 * 60
         )
         
