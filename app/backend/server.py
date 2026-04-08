@@ -398,6 +398,7 @@ async def health_env():
     
     return {
         "environment": "production" if is_production else "development",
+        "platform": "Vercel" if is_production else "Local",
         "mongo_url_set": bool(os.environ.get("MONGO_URL")),
         "firebase_config_set": bool(os.environ.get("FIREBASE_ADMIN_JSON"))
     }
