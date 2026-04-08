@@ -270,14 +270,69 @@ async def firebase_login(request: Request, response: Response):
 # Current user endpoint
 @app.get("/api/auth/me")
 async def get_current_user_endpoint(request: Request):
-    user = await get_current_user(request)
-    return {
-        "user_id": user.user_id,
-        "email": user.email,
-        "name": user.name,
-        "picture": user.picture,
-        "created_at": user.created_at
-    }
+    try:
+        # Get session token from cookie
+        session_token = request.cookies.get("session_token")
+        print(f"Looking for session token: {session_token[:8] if found else 'None'}")
+        
+        if not session_token:
+            print("No session token found in cookie")
+            raise HTTPException(status_code=401, detail="No session token provided")
+        
+        # Check memory store first (more reliable for session persistence)
+        user_data = session_store.get(session_token)
+        if user_data:
+            print(f"Found session in memory store: {user_data.get('email', 'unknown')}")
+            return {
+                "user_id": user_data.get("user_id"),
+                "email": user_data.get("email"),
+                "name": user_data.get("name"),
+                "picture": user_data.get("picture"),
+                "created_at": user_data.get("created_at")
+            }
+        
+        # Fallback to database if memory store fails
+        if db is not None:
+            print("Database not available, skipping database lookup")
+            raise HTTPException(status_code=401, detail="No valid session found")
+        
+        # Try database lookup
+        try:
+            if db:
+                session_doc = await db.user_sessions.find_one({"session_token": session_token})
+                if session_doc:
+                    print(f"Found session in database: {session_doc.get('user_id', 'unknown')}")
+                    return {
+                        "user_id": session_doc.get("user_id"),
+                        "email": session_doc.get("email"),
+                        "name": session_doc.get("name"),
+                        "picture": session_doc.get("picture"),
+                        "created_at": session_doc.get("created_at")
+                    }
+            else:
+                print(f"Session not found in database")
+                # Fallback to memory store
+                user_data = session_store.get(session_token)
+                if user_data:
+                    print(f"Found session in memory store: {user_data.get('email', 'unknown')}")
+                    return {
+                        "user_id": user_data.get("user_id"),
+                        "email": user_data.get("email"),
+                        "name": user_data.get("name"),
+                        "picture": user_data.get("picture"),
+                        "created_at": user_data.get("created_at")
+                    }
+                else:
+                    print("Session not found in memory store either")
+                    raise HTTPException(status_code=401, detail="No valid session found")
+                    
+        except Exception as e:
+            print(f"Session validation error: {e}")
+            raise HTTPException(status_code=500, detail=f"Session validation failed: {str(e)}")
+            
+    except Exception as e:
+        print(f"Unexpected error in session validation: {e}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 # Logout endpoint
 @app.post("/api/auth/logout")
