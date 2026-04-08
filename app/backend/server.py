@@ -173,6 +173,7 @@ async def firebase_login(request: Request, response: Response):
             }
             
             # Set session cookie
+            print(f" Setting fallback session cookie: {session_token[:8]}...")
             response.set_cookie(
                 key="session_token",
                 value=session_token,
@@ -182,6 +183,7 @@ async def firebase_login(request: Request, response: Response):
                 samesite="lax",
                 domain="*.xerohero.dev"
             )
+            print(f" Fallback session cookie set successfully")
             
             return {
                 "user_id": user_id,
@@ -242,6 +244,7 @@ async def firebase_login(request: Request, response: Response):
             }
         
         # Set session cookie
+        print(f" Setting session cookie: {session_token[:8]}...")
         response.set_cookie(
             key="session_token",
             value=session_token,
@@ -249,9 +252,9 @@ async def firebase_login(request: Request, response: Response):
             secure=True,  # Required for production HTTPS
             samesite="lax",
             path="/",
-            domain=".xerohero.dev",  # Explicit domain for production
             max_age=7 * 24 * 60 * 60
         )
+        print(f" Session cookie set successfully")
         
         return {
             "user_id": user_id,
