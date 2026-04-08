@@ -13,7 +13,11 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  console.log("AuthContext initialized");
+
   const checkAuth = useCallback(async () => {
+    console.log("checkAuth called");
+    
     // First check if we already have a user in state
     if (user) {
       console.log("User already in state, authenticated:", user.email);
@@ -33,7 +37,9 @@ export const AuthProvider = ({ children }) => {
     console.log("Checking for session cookie...");
     
     const cookies = document.cookie.split(';').map(cookie => cookie.trim());
+    console.log("All cookies:", cookies);
     const sessionCookie = cookies.find(cookie => cookie.startsWith('session_token='));
+    console.log("Session cookie found:", !!sessionCookie);
     
     if (!sessionCookie) {
       console.log("No session cookie found, user not authenticated");
@@ -57,6 +63,7 @@ export const AuthProvider = ({ children }) => {
 
       if (response.ok) {
         const userData = await response.json();
+        console.log("User data from /auth/me:", userData);
         setUser(userData);
         setLoading(false);
         return true;
@@ -85,11 +92,13 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const setUserData = useCallback((userData) => {
+    console.log("setUserData called with:", userData);
     setUser(userData);
     setLoading(false);
   }, []);
 
   const loginWithToken = useCallback(async (idToken, firebaseUser) => {
+    console.log("loginWithToken called with:", { idToken: idToken?.substring(0, 10) + "...", email: firebaseUser?.email });
     try {
       const response = await fetch(`${API}/auth/firebase-login`, {
         method: "POST",
@@ -103,10 +112,12 @@ export const AuthProvider = ({ children }) => {
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.log("Login failed:", response.status, errorText);
         throw new Error(`Backend login failed: ${response.status} ${response.statusText}`);
       }
 
       const userData = await response.json();
+      console.log("Login successful, user data:", userData);
       setUser(userData);
       setLoading(false);
       return userData;
@@ -118,6 +129,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    console.log("useEffect called");
     // Listen to Firebase auth state changes
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       console.log("Firebase auth state changed:", firebaseUser ? `User: ${firebaseUser.email}` : "No user");
@@ -126,6 +138,7 @@ export const AuthProvider = ({ children }) => {
         // User is signed in, get ID token and authenticate with backend
         try {
           const idToken = await firebaseUser.getIdToken();
+          console.log("Got ID token, calling loginWithToken");
           await loginWithToken(idToken, {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
@@ -139,6 +152,7 @@ export const AuthProvider = ({ children }) => {
         }
       } else {
         // User is signed out - check if we have a valid session cookie
+        console.log("User signed out, checking session...");
         await checkAuth();
       }
     });
