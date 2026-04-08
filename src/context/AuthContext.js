@@ -22,24 +22,24 @@ export const AuthProvider = ({ children }) => {
 
     // First check if we already have a user in state
     if (user) {
-      console.log("✅ User already in state, authenticated:", user.email);
+      console.log("User already in state, authenticated:", user.email);
       return true;
     }
 
     // Check if there's a session cookie (for returning users)
-    console.log("🔍 Checking for session cookie...");
+    console.log("Checking for session cookie...");
     
     // Quick cookie check first (no API call)
     const cookies = document.cookie.split(';').map(cookie => cookie.trim());
     const sessionCookie = cookies.find(cookie => cookie.startsWith('session_token='));
     
     if (!sessionCookie) {
-      console.log("🍪 No session cookie found, user not authenticated");
+      console.log("No session cookie found, user not authenticated");
       setLoading(false);
       return false;
     }
 
-    console.log("🍪 Session cookie found, validating...");
+    console.log("Session cookie found, validating...");
     
     // Add a small delay to ensure cookies are available
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -109,7 +109,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       return userData;
     } catch (error) {
-      console.error("❌ Login with token error:", error);
+      console.error("Login with token error:", error);
       setLoading(false);
       throw error;
     }
@@ -118,52 +118,49 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Listen to Firebase auth state changes
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("Firebase auth state changed:", firebaseUser ? `User: ${firebaseUser.email}` : "No user");
+      
       if (firebaseUser) {
         // User is signed in, get ID token and authenticate with backend
         try {
           const idToken = await firebaseUser.getIdToken();
           
-          // Only login if we're not already in the process of logging in
-          if (!user || user.email !== firebaseUser.email) {
-            await loginWithToken(idToken, {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              displayName: firebaseUser.displayName,
-              photoURL: firebaseUser.photoURL,
-            });
-          }
+          // Always authenticate with backend when Firebase user is available
+          // This ensures session persistence works correctly
+          await loginWithToken(idToken, {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+          });
         } catch (error) {
           console.error("Auth state change error:", error);
           setUser(null);
           setLoading(false);
         }
       } else {
-        // User is signed out - only check session if we don't already have a user
-        if (!user) {
-          try {
-            const response = await fetch(`${API}/auth/me`, {
-              method: "GET",
-              credentials: "include",
-              headers: {
-                "Content-Type": "application/json"
-              }
-            });
-
-            if (response.ok) {
-              const userData = await response.json();
-              setUser(userData);
-              setLoading(false);
-              return; // Don't clear the user state
+        // User is signed out - check if we have a valid session cookie
+        try {
+          const response = await fetch(`${API}/auth/me`, {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json"
             }
-          } catch (error) {
-            console.log("🔍 Session check failed:", error.message);
+          });
+
+          if (response.ok) {
+            const userData = await response.json();
+            setUser(userData);
+            setLoading(false);
+            return; // Don't clear the user state
           }
+        } catch (error) {
+          console.log("Session check failed:", error.message);
         }
         
-        // Only clear user state if we don't have a valid session
-        if (!user) {
-          setUser(null);
-        }
+        // No valid session found
+        setUser(null);
         setLoading(false);
       }
     });
