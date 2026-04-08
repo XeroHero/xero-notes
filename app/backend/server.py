@@ -178,7 +178,7 @@ async def firebase_login(request: Request, response: Response):
                 value=session_token,
                 expires=expires_at,
                 httponly=True,
-                secure=False,  # Set to True in production with HTTPS
+                secure=True,  # Required for production HTTPS
                 samesite="lax"
             )
             
@@ -245,7 +245,7 @@ async def firebase_login(request: Request, response: Response):
             key="session_token",
             value=session_token,
             httponly=True,
-            secure=False,
+            secure=True,  # Required for production HTTPS
             samesite="lax",
             path="/",
             max_age=7 * 24 * 60 * 60
