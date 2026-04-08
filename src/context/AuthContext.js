@@ -26,6 +26,9 @@ export const AuthProvider = ({ children }) => {
       return true;
     }
 
+    // Add a small delay to ensure Firebase auth state is ready
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     // Check if there's a session cookie (for returning users)
     console.log("Checking for session cookie...");
     
