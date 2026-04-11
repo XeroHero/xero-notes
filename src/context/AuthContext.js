@@ -36,10 +36,14 @@ export const AuthProvider = ({ children }) => {
     // Check if there's a session cookie (for returning users)
     console.log("Checking for session cookie...");
     
+    // Add delay to ensure cookies are available after login
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     const cookies = document.cookie.split(';').map(cookie => cookie.trim());
     console.log("All cookies:", cookies);
     const sessionCookie = cookies.find(cookie => cookie.startsWith('session_token='));
     console.log("Session cookie found:", !!sessionCookie);
+    console.log("Document cookie string:", document.cookie);
     
     if (!sessionCookie) {
       console.log("No session cookie found, user not authenticated");
