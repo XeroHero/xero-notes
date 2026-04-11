@@ -67,7 +67,24 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
         
-        # Basic security headers that won't block legitimate requests
+        # Content Security Policy - allow necessary resources
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://vercel.live; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com; "
+            "img-src 'self' data: https:; "
+            "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://vercel.live; "
+            "frame-src 'self' https://*.google.com; "
+            "object-src 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self'; "
+            "frame-ancestors 'none'; "
+            "upgrade-insecure-requests"
+        )
+        response.headers["Content-Security-Policy"] = csp
+        
+        # Other security headers
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "SAMEORIGIN"  # Less restrictive than DENY
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
@@ -268,6 +285,7 @@ async def firebase_login(request: Request, response: Response):
                 "expires_at": expires_at.isoformat(),
                 "created_at": datetime.now(timezone.utc).isoformat()
             }
+            print(f"Session stored in memory store: {session_token[:8]}... for user: {email}")
         
         # Set session cookie
         print(f" Setting session cookie: {session_token[:8]}...")
@@ -311,6 +329,7 @@ async def get_current_user_endpoint(request: Request):
             raise HTTPException(status_code=401, detail="No session token provided")
         
         # Check memory store first (more reliable for session persistence)
+        print(f"Available sessions in store: {list(session_store.keys())}")
         user_data = session_store.get(session_token)
         if user_data:
             print(f"Found session in memory store: {user_data.get('email', 'unknown')}")
@@ -321,6 +340,8 @@ async def get_current_user_endpoint(request: Request):
                 "picture": user_data.get("picture"),
                 "created_at": user_data.get("created_at")
             }
+        else:
+            print(f"Session not found in memory store for token: {session_token}")
         
         # Fallback to database if memory store fails
         if db is not None:
