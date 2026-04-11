@@ -36,6 +36,8 @@ db = None
 client = None
 firebase_app = None
 session_store = {}
+notes_store = {}  # user_id -> list of notes
+folders_store = {}  # user_id -> list of folders
 
 # MongoDB connection - disabled for now
 print(" MongoDB connection disabled - using memory storage")
@@ -396,53 +398,89 @@ async def health_check():
 @app.get("/api/folders")
 async def get_folders(request: Request):
     user = await get_current_user(request)
-    # Return empty folders list for now (memory storage)
-    return []
+    # Return user's folders from memory storage
+    user_folders = folders_store.get(user.user_id, [])
+    return user_folders
 
 @app.post("/api/folders")
 async def create_folder(request: Request):
     user = await get_current_user(request)
     body = await request.json()
-    # Create folder logic here
-    return {"id": f"folder_{uuid.uuid4().hex[:8]}", "name": body.get("name", "")}
+    
+    # Create new folder
+    new_folder = {
+        "id": f"folder_{uuid.uuid4().hex[:8]}", 
+        "name": body.get("name", ""),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "user_id": user.user_id
+    }
+    
+    # Store in memory
+    if user.user_id not in folders_store:
+        folders_store[user.user_id] = []
+    folders_store[user.user_id].append(new_folder)
+    
+    return new_folder
 
 # Notes endpoints
 @app.get("/api/notes")
 async def get_notes(request: Request):
     user = await get_current_user(request)
-    # Return empty notes list for now (memory storage)
-    return []
+    # Return user's notes from memory storage
+    user_notes = notes_store.get(user.user_id, [])
+    return user_notes
 
 @app.post("/api/notes")
 async def create_note(request: Request):
     user = await get_current_user(request)
     body = await request.json()
-    # Create note logic here
-    return {
+    
+    # Create new note
+    new_note = {
         "id": f"note_{uuid.uuid4().hex[:8]}", 
         "title": body.get("title", ""),
         "content": body.get("content", ""),
         "folder_id": body.get("folder_id"),
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "user_id": user.user_id
     }
+    
+    # Store in memory
+    if user.user_id not in notes_store:
+        notes_store[user.user_id] = []
+    notes_store[user.user_id].append(new_note)
+    
+    return new_note
 
 @app.put("/api/notes/{note_id}")
 async def update_note(note_id: str, request: Request):
     user = await get_current_user(request)
     body = await request.json()
-    # Update note logic here
-    return {
-        "id": note_id,
-        "title": body.get("title", ""),
-        "content": body.get("content", ""),
-        "updated_at": datetime.now(timezone.utc).isoformat()
-    }
+    
+    # Find and update the note
+    user_notes = notes_store.get(user.user_id, [])
+    for note in user_notes:
+        if note["id"] == note_id:
+            note["title"] = body.get("title", note["title"])
+            note["content"] = body.get("content", note["content"])
+            note["updated_at"] = datetime.now(timezone.utc).isoformat()
+            return note
+    
+    raise HTTPException(status_code=404, detail="Note not found")
 
 @app.delete("/api/folders/{folder_id}")
 async def delete_folder(folder_id: str, request: Request):
     user = await get_current_user(request)
-    # Delete folder logic here
-    return {"message": "Folder deleted"}
+    
+    # Find and delete the folder
+    user_folders = folders_store.get(user.user_id, [])
+    for i, folder in enumerate(user_folders):
+        if folder["id"] == folder_id:
+            del user_folders[i]
+            return {"message": "Folder deleted"}
+    
+    raise HTTPException(status_code=404, detail="Folder not found")
 
 @app.post("/api/notes/{note_id}/share")
 async def share_note(note_id: str, request: Request):
