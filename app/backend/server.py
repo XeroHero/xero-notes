@@ -1,9 +1,6 @@
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
 from datetime import datetime, timezone, timedelta
 import os
 import uuid
@@ -36,10 +33,6 @@ app = FastAPI()
 
 # Add security middleware
 app.add_middleware(SecurityHeadersMiddleware)
-
-# Add trusted host middleware (only in production)
-if os.environ.get("VERCEL_ENV") == "production":
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*.xerohero.dev", "xerohero.dev"])
 
 # Global variables
 db = None
@@ -75,33 +68,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
         
-        # Content Security Policy
-        csp = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; "
-            "style-src 'self' 'unsafe-inline'; "
-            "img-src 'self' data: https:; "
-            "font-src 'self'; "
-            "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com; "
-            "frame-src 'self' https://*.google.com; "
-            "object-src 'none'; "
-            "base-uri 'self'; "
-            "form-action 'self'; "
-            "frame-ancestors 'none'; "
-            "upgrade-insecure-requests"
-        )
-        response.headers["Content-Security-Policy"] = csp
-        
-        # Other security headers
-        response.headers["X-Frame-Options"] = "DENY"
+        # Basic security headers that won't block legitimate requests
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"  # Less restrictive than DENY
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
         
         # HSTS (only in production)
         if os.environ.get("VERCEL_ENV") == "production":
-            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         
         return response
 
