@@ -198,7 +198,7 @@ async def firebase_login(request: Request, response: Response):
             print(f" Setting fallback session cookie: {session_token[:8]}...")
             domain = None
             if os.environ.get("VERCEL_ENV") == "production":
-                domain = "xerohero.dev"  # Use specific domain in production
+                domain = "notes.xerohero.dev"  # Use specific subdomain in production
             
             response.set_cookie(
                 key="session_token",
@@ -273,7 +273,7 @@ async def firebase_login(request: Request, response: Response):
         print(f" Setting session cookie: {session_token[:8]}...")
         domain = None
         if os.environ.get("VERCEL_ENV") == "production":
-            domain = "xerohero.dev"  # Use specific domain in production
+            domain = "notes.xerohero.dev"  # Use specific subdomain in production
         
         response.set_cookie(
             key="session_token",
