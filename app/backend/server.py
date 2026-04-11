@@ -1,5 +1,9 @@
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 from datetime import datetime, timezone, timedelta
 import os
 import uuid
@@ -30,6 +34,13 @@ except ImportError:
 # Initialize FastAPI app
 app = FastAPI()
 
+# Add security middleware
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Add trusted host middleware (only in production)
+if os.environ.get("VERCEL_ENV") == "production":
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*.xerohero.dev", "xerohero.dev"])
+
 # Global variables
 db = None
 client = None
@@ -58,6 +69,41 @@ if FIREBASE_AVAILABLE:
         firebase_app = None
 else:
     firebase_app = None
+
+# Security Headers Middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        
+        # Content Security Policy
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: https:; "
+            "font-src 'self'; "
+            "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com; "
+            "frame-src 'self' https://*.google.com; "
+            "object-src 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self'; "
+            "frame-ancestors 'none'; "
+            "upgrade-insecure-requests"
+        )
+        response.headers["Content-Security-Policy"] = csp
+        
+        # Other security headers
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        
+        # HSTS (only in production)
+        if os.environ.get("VERCEL_ENV") == "production":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+        
+        return response
 
 # Data models
 class User:
@@ -174,6 +220,10 @@ async def firebase_login(request: Request, response: Response):
             
             # Set session cookie
             print(f" Setting fallback session cookie: {session_token[:8]}...")
+            domain = None
+            if os.environ.get("VERCEL_ENV") == "production":
+                domain = "xerohero.dev"  # Use specific domain in production
+            
             response.set_cookie(
                 key="session_token",
                 value=session_token,
@@ -181,7 +231,7 @@ async def firebase_login(request: Request, response: Response):
                 httponly=True,
                 secure=True,  # Required for production HTTPS
                 samesite="lax",
-                domain="*.xerohero.dev"
+                domain=domain
             )
             print(f" Fallback session cookie set successfully")
             
@@ -245,6 +295,10 @@ async def firebase_login(request: Request, response: Response):
         
         # Set session cookie
         print(f" Setting session cookie: {session_token[:8]}...")
+        domain = None
+        if os.environ.get("VERCEL_ENV") == "production":
+            domain = "xerohero.dev"  # Use specific domain in production
+        
         response.set_cookie(
             key="session_token",
             value=session_token,
@@ -252,7 +306,8 @@ async def firebase_login(request: Request, response: Response):
             secure=True,  # Required for production HTTPS
             samesite="lax",
             path="/",
-            max_age=7 * 24 * 60 * 60
+            max_age=7 * 24 * 60 * 60,
+            domain=domain
         )
         print(f" Session cookie set successfully")
         
