@@ -110,18 +110,24 @@ class User:
 # Session verification with database support
 async def get_current_user(request: Request) -> User:
     session_token = request.cookies.get("session_token")
+    print(f"get_current_user called - session_token: {session_token[:8] if session_token else 'None'}")
+    print(f"All cookies: {dict(request.cookies)}")
     
     if not session_token:
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
             session_token = auth_header.split(" ")[1]
+            print(f"Found token in Authorization header: {session_token[:8] if session_token else 'None'}")
     
     if not session_token:
+        print("No session token found in cookies or headers")
         raise HTTPException(status_code=401, detail="Not authenticated")
     
     # FIRST: Check memory sessions (primary for reliability)
+    print(f"Available sessions in memory store: {list(session_store.keys())}")
     if session_token in session_store:
         session_data = session_store[session_token]
+        print(f"Found session in memory store for user: {session_data.get('email', 'unknown')}")
         
         # Check if session is expired
         expires_at = session_data.get("expires_at")
@@ -133,9 +139,11 @@ async def get_current_user(request: Request) -> User:
             if expires_at < datetime.now(timezone.utc):
                 # Session expired, remove it
                 del session_store[session_token]
+                print("Session expired and removed")
                 raise HTTPException(status_code=401, detail="Session expired")
         
         # Return user from memory store
+        print(f"Session valid, returning user: {session_data.get('email', 'unknown')}")
         return User(
             user_id=session_data["user_id"],
             email=session_data["email"],
@@ -143,6 +151,8 @@ async def get_current_user(request: Request) -> User:
             picture=session_data.get("picture", ""),
             created_at=session_data.get("created_at", "")
         )
+    else:
+        print(f"Session token not found in memory store: {session_token}")
     
     # SECOND: Check database sessions (fallback)
     if db is not None:
