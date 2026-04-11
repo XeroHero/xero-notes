@@ -19,3 +19,5 @@ venv/
 /build/*
 .vercel
 build
+/.idea/*
+/build
