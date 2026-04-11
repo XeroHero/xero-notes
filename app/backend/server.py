@@ -217,9 +217,9 @@ async def firebase_login(request: Request, response: Response):
                 key="session_token",
                 value=session_token,
                 expires=expires_at,
-                httponly=True,
+                httponly=False,  # Allow JavaScript access for debugging
                 secure=True,  # Required for production HTTPS
-                samesite="lax",
+                samesite="none",  # Less restrictive for cross-origin requests
                 path="/"
             )
             print(f" Fallback session cookie set successfully")
@@ -285,13 +285,13 @@ async def firebase_login(request: Request, response: Response):
         
         # Set session cookie
         print(f" Setting session cookie: {session_token[:8]}...")
-        # Don't set domain in production to allow subdomain access
+        # Use less restrictive cookie settings for better compatibility
         response.set_cookie(
             key="session_token",
             value=session_token,
-            httponly=True,
+            httponly=False,  # Allow JavaScript access for debugging
             secure=True,  # Required for production HTTPS
-            samesite="lax",
+            samesite="none",  # Less restrictive for cross-origin requests
             path="/",
             max_age=7 * 24 * 60 * 60
         )
