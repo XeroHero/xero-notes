@@ -119,36 +119,7 @@ async def get_current_user(request: Request) -> User:
     if not session_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    # FIRST: Check database sessions (persistent)
-    if db is not None:
-        try:
-            session_doc = await db.user_sessions.find_one({"session_token": session_token})
-            if session_doc:
-                # Check if session is expired
-                expires_at = session_doc.get("expires_at")
-                if expires_at:
-                    if isinstance(expires_at, str):
-                        expires_at = datetime.fromisoformat(expires_at)
-                    if expires_at.tzinfo is None:
-                        expires_at = expires_at.replace(tzinfo=timezone.utc)
-                    if expires_at < datetime.now(timezone.utc):
-                        # Session expired, remove it
-                        await db.user_sessions.delete_one({"session_token": session_token})
-                    else:
-                        # Session valid, find user data
-                        user_doc = await db.users.find_one({"user_id": session_doc["user_id"]})
-                        if user_doc:
-                            return User(
-                                user_id=user_doc["user_id"],
-                                email=user_doc["email"],
-                                name=user_doc.get("name", ""),
-                                picture=user_doc.get("picture", ""),
-                                created_at=user_doc.get("created_at", "")
-                            )
-        except Exception as e:
-            print(f"Database session check failed: {e}")
-    
-    # SECOND: Check memory sessions (fallback)
+    # FIRST: Check memory sessions (primary for reliability)
     if session_token in session_store:
         session_data = session_store[session_token]
         
@@ -172,6 +143,36 @@ async def get_current_user(request: Request) -> User:
             picture=session_data.get("picture", ""),
             created_at=session_data.get("created_at", "")
         )
+    
+    # SECOND: Check database sessions (fallback)
+    if db is not None:
+        try:
+            session_doc = await db.user_sessions.find_one({"session_token": session_token})
+            if session_doc:
+                # Check if session is expired
+                expires_at = session_doc.get("expires_at")
+                if expires_at:
+                    if isinstance(expires_at, str):
+                        expires_at = datetime.fromisoformat(expires_at)
+                    if expires_at.tzinfo is None:
+                        expires_at = expires_at.replace(tzinfo=timezone.utc)
+                    if expires_at < datetime.now(timezone.utc):
+                        # Session expired, remove it
+                        await db.user_sessions.delete_one({"session_token": session_token})
+                        raise HTTPException(status_code=401, detail="Session expired")
+                    else:
+                        # Session valid, find user data
+                        user_doc = await db.users.find_one({"user_id": session_doc["user_id"]})
+                        if user_doc:
+                            return User(
+                                user_id=user_doc["user_id"],
+                                email=user_doc["email"],
+                                name=user_doc.get("name", ""),
+                                picture=user_doc.get("picture", ""),
+                                created_at=user_doc.get("created_at", "")
+                            )
+        except Exception as e:
+            print(f"Database session check failed: {e}")
     
     raise HTTPException(status_code=401, detail="Invalid session")
 
@@ -314,7 +315,7 @@ async def get_current_user_endpoint(request: Request):
     try:
         # Get session token from cookie
         session_token = request.cookies.get("session_token")
-        print(f"Looking for session token: {session_token[:8] if found else 'None'}")
+        print(f"Looking for session token: {session_token[:8] if session_token else 'None'}")
         
         if not session_token:
             print("No session token found in cookie")
@@ -336,8 +337,8 @@ async def get_current_user_endpoint(request: Request):
             print(f"Session not found in memory store for token: {session_token}")
         
         # Fallback to database if memory store fails
-        if db is not None:
-            print("Database not available, skipping database lookup")
+        if db is None:
+            print("Database not available, no fallback possible")
             raise HTTPException(status_code=401, detail="No valid session found")
         
         # Try database lookup
