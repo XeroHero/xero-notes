@@ -31,9 +31,6 @@ except ImportError:
 # Initialize FastAPI app
 app = FastAPI()
 
-# Add security middleware
-app.add_middleware(SecurityHeadersMiddleware)
-
 # Global variables
 db = None
 client = None
@@ -78,6 +75,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         
         return response
+
+# Add security middleware after class definition
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Data models
 class User:
