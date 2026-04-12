@@ -119,9 +119,12 @@ async def get_current_user(request: Request) -> User:
     if not session_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
+    print(f"get_current_user: Looking for token {session_token[:8] if session_token else 'None'} in {len(session_store)} sessions")
+    
     # FIRST: Check memory sessions (primary for reliability)
     if session_token in session_store:
         session_data = session_store[session_token]
+        print(f"get_current_user: Found session for user {session_data.get('email', 'unknown')}")
         
         # Check if session is expired
         expires_at = session_data.get("expires_at")
