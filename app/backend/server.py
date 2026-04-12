@@ -313,8 +313,12 @@ async def firebase_login(request: Request, response: Response):
 @app.get("/api/auth/me")
 async def get_current_user_endpoint(request: Request):
     try:
-        # Get session token from cookie
+        # Get session token from cookie or Authorization header
         session_token = request.cookies.get("session_token")
+        if not session_token:
+            auth_header = request.headers.get("Authorization")
+            if auth_header and auth_header.startswith("Bearer "):
+                session_token = auth_header.split(" ")[1]
         
         if not session_token:
             raise HTTPException(status_code=401, detail="No session token provided")
@@ -330,28 +334,13 @@ async def get_current_user_endpoint(request: Request):
                 "created_at": user_data.get("created_at")
             }
         
-        # Fallback to database if memory store fails
-        if db is None:
-            raise HTTPException(status_code=401, detail="No valid session found")
-        
-        # Try database lookup
-        try:
-            session_doc = await db.user_sessions.find_one({"session_token": session_token})
-            if session_doc:
-                return {
-                    "user_id": session_doc.get("user_id"),
-                    "email": session_doc.get("email"),
-                    "name": session_doc.get("name"),
-                    "picture": session_doc.get("picture"),
-                    "created_at": session_doc.get("created_at")
-                }
-            else:
-                raise HTTPException(status_code=401, detail="No valid session found")
-                    
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Session validation failed: {str(e)}")
+        # Database is disabled, so no fallback available
+        raise HTTPException(status_code=401, detail="No valid session found")
             
+    except HTTPException:
+        raise
     except Exception as e:
+        print(f"Unexpected error in /api/auth/me: {e}")
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 # Logout endpoint
