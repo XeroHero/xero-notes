@@ -58,21 +58,27 @@ def encode_session_data(user_data: dict) -> str:
 
 def decode_session_data(session_token: str) -> Optional[dict]:
     """Decode user data from a session token"""
+    print(f"decode_session_data: Received token: {session_token[:50]}...")
     if not session_token.startswith("session_"):
+        print("decode_session_data: Token doesn't start with session_")
         return None
     
     try:
         encoded_part = session_token[8:]  # Remove "session_" prefix
+        print(f"decode_session_data: Encoded part length: {len(encoded_part)}")
         decoded = base64.b64decode(encoded_part.encode()).decode()
         payload = json.loads(decoded)
+        print(f"decode_session_data: Successfully decoded payload for {payload.get('email', 'unknown')}")
         
         # Check expiration
         exp = datetime.fromisoformat(payload["exp"])
         if exp < datetime.now(timezone.utc):
+            print("decode_session_data: Token expired")
             return None
             
         return payload
-    except Exception:
+    except Exception as e:
+        print(f"decode_session_data: Error decoding token: {e}")
         return None
 
 # MongoDB connection - disabled for now
