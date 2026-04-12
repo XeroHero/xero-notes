@@ -380,17 +380,17 @@ async def firebase_login(request: Request, response: Response):
 @app.get("/api/auth/me")
 async def get_current_user_endpoint(request: Request):
     try:
-        # Get session token from cookie or Authorization header
-        session_token = request.cookies.get("session_token")
-        if not session_token:
-            auth_header = request.headers.get("Authorization")
-            if auth_header and auth_header.startswith("Bearer "):
-                session_token = auth_header.split(" ")[1]
+        # Prioritize Authorization header for consistency with get_current_user
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            session_token = auth_header.split(" ")[1]
+        else:
+            session_token = request.cookies.get("session_token")
         
         if not session_token:
             raise HTTPException(status_code=401, detail="No session token provided")
         
-        # Check memory store first (more reliable for session persistence)
+        # Check memory store first
         user_data = session_store.get(session_token)
         if user_data:
             return {
@@ -401,7 +401,22 @@ async def get_current_user_endpoint(request: Request):
                 "created_at": user_data.get("created_at")
             }
         
-        # Database is disabled, so no fallback available
+        # Try to decode session data from token (serverless-friendly approach)
+        decoded_session = decode_session_data(session_token)
+        if decoded_session:
+            # Store in memory for future requests to this instance
+            session_store[session_token] = {
+                **decoded_session,
+                "expires_at": decoded_session["exp"]
+            }
+            return {
+                "user_id": decoded_session["user_id"],
+                "email": decoded_session["email"],
+                "name": decoded_session.get("name", ""),
+                "picture": decoded_session.get("picture", ""),
+                "created_at": decoded_session.get("created_at", "")
+            }
+        
         raise HTTPException(status_code=401, detail="No valid session found")
             
     except HTTPException:
