@@ -46,11 +46,19 @@ const Dashboard = () => {
       const timestamp = Date.now();
       const cacheBustingUrl = `${url}${url.includes('?') ? '&' : '?'}_t=${timestamp}`;
       
+      // Get session token from localStorage as fallback
+      const sessionToken = localStorage.getItem('session_token');
+      const headers = {};
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+      
       for (let i = 0; i < retries; i++) {
         try {
           const response = await fetch(cacheBustingUrl, {
             credentials: "include",
             cache: 'no-store',
+            headers,
           });
           if (response.ok) {
             return response;

@@ -57,12 +57,19 @@ export const AuthProvider = ({ children }) => {
     await new Promise(resolve => setTimeout(resolve, 100));
     
     try {
+      // Get session token from localStorage as fallback for serverless environments
+      const sessionToken = localStorage.getItem('session_token');
+      const headers = {
+        "Content-Type": "application/json"
+      };
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+      
       const response = await fetch(`${API}/auth/me`, {
         method: "GET",
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json"
-        }
+        headers
       });
 
       if (response.ok) {
@@ -91,6 +98,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error("Logout error:", error);
     }
+    // Clear localStorage session token
+    localStorage.removeItem('session_token');
     // Clear state
     setUser(null);
   }, []);
@@ -124,6 +133,16 @@ export const AuthProvider = ({ children }) => {
       console.log("Login successful, user data:", userData);
       setUser(userData);
       setLoading(false);
+      
+      // Store session token in localStorage as fallback for serverless environments
+      const cookies = document.cookie.split(';').map(cookie => cookie.trim());
+      const sessionCookie = cookies.find(cookie => cookie.startsWith('session_token='));
+      if (sessionCookie) {
+        const token = sessionCookie.split('=')[1];
+        localStorage.setItem('session_token', token);
+        console.log("Session token stored in localStorage as fallback");
+      }
+      
       return userData;
     } catch (error) {
       console.error("Login with token error:", error);
