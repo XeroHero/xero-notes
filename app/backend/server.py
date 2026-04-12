@@ -188,6 +188,7 @@ async def get_current_user(request: Request) -> User:
     print(f"get_current_user: Session not found in memory, attempting to recreate from token")
     
     # Try to decode session data from token (serverless-friendly approach)
+    print(f"get_current_user: Attempting to decode session token: {session_token[:50]}...")
     decoded_session = decode_session_data(session_token)
     if decoded_session:
         print(f"get_current_user: Decoded session for user {decoded_session.get('email', 'unknown')}")
@@ -206,7 +207,7 @@ async def get_current_user(request: Request) -> User:
             created_at=decoded_session.get("created_at", "")
         )
     
-    print(f"get_current_user: Invalid or expired session token")
+    print(f"get_current_user: Failed to decode session token - invalid or expired")
     raise HTTPException(status_code=401, detail="Session expired - please refresh the page")
     
     # SECOND: Check database sessions (fallback)
