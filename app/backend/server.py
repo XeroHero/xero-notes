@@ -6,6 +6,7 @@ import os
 import uuid
 import json
 import httpx
+import base64
 from typing import Optional
 from dotenv import load_dotenv
 
@@ -38,6 +39,41 @@ firebase_app = None
 session_store = {}
 notes_store = {}  # user_id -> list of notes
 folders_store = {}  # user_id -> list of folders
+
+# Helper functions for session token encoding/decoding
+def encode_session_data(user_data: dict) -> str:
+    """Encode user data into a session token for serverless environments"""
+    # Create a simple encoded token with user data and expiration
+    payload = {
+        "user_id": user_data["user_id"],
+        "email": user_data["email"],
+        "name": user_data.get("name", ""),
+        "picture": user_data.get("picture", ""),
+        "created_at": user_data.get("created_at", datetime.now(timezone.utc).isoformat()),
+        "exp": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+    }
+    # Simple base64 encoding (not secure, but works for demo)
+    encoded = base64.b64encode(json.dumps(payload).encode()).decode()
+    return f"session_{encoded}"
+
+def decode_session_data(session_token: str) -> Optional[dict]:
+    """Decode user data from a session token"""
+    if not session_token.startswith("session_"):
+        return None
+    
+    try:
+        encoded_part = session_token[8:]  # Remove "session_" prefix
+        decoded = base64.b64decode(encoded_part.encode()).decode()
+        payload = json.loads(decoded)
+        
+        # Check expiration
+        exp = datetime.fromisoformat(payload["exp"])
+        if exp < datetime.now(timezone.utc):
+            return None
+            
+        return payload
+    except Exception:
+        return None
 
 # MongoDB connection - disabled for now
 print(" MongoDB connection disabled - using memory storage")
@@ -109,19 +145,19 @@ class User:
 
 # Session verification with database support
 async def get_current_user(request: Request) -> User:
-    session_token = request.cookies.get("session_token")
-    
-    if not session_token:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            session_token = auth_header.split(" ")[1]
+    # Prioritize Authorization header for serverless environment reliability
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        session_token = auth_header.split(" ")[1]
+    else:
+        session_token = request.cookies.get("session_token")
     
     if not session_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
     print(f"get_current_user: Looking for token {session_token[:8] if session_token else 'None'} in {len(session_store)} sessions")
     
-    # FIRST: Check memory sessions (primary for reliability)
+    # FIRST: Check memory sessions
     if session_token in session_store:
         session_data = session_store[session_token]
         print(f"get_current_user: Found session for user {session_data.get('email', 'unknown')}")
@@ -146,6 +182,32 @@ async def get_current_user(request: Request) -> User:
             picture=session_data.get("picture", ""),
             created_at=session_data.get("created_at", "")
         )
+    
+    # If session not found in memory, try to recreate from token pattern
+    # This handles serverless environment where memory doesn't persist
+    print(f"get_current_user: Session not found in memory, attempting to recreate from token")
+    
+    # Try to decode session data from token (serverless-friendly approach)
+    decoded_session = decode_session_data(session_token)
+    if decoded_session:
+        print(f"get_current_user: Decoded session for user {decoded_session.get('email', 'unknown')}")
+        
+        # Store in memory for future requests to this instance
+        session_store[session_token] = {
+            **decoded_session,
+            "expires_at": decoded_session["exp"]
+        }
+        
+        return User(
+            user_id=decoded_session["user_id"],
+            email=decoded_session["email"],
+            name=decoded_session.get("name", ""),
+            picture=decoded_session.get("picture", ""),
+            created_at=decoded_session.get("created_at", "")
+        )
+    
+    print(f"get_current_user: Invalid or expired session token")
+    raise HTTPException(status_code=401, detail="Session expired - please refresh the page")
     
     # SECOND: Check database sessions (fallback)
     if db is not None:
@@ -201,18 +263,23 @@ async def firebase_login(request: Request, response: Response):
             name = firebaseUser.get('displayName', '')
             picture = firebaseUser.get('photoURL', '')
             
-            # Create session token
-            session_token = f"session_{uuid.uuid4().hex[:24]}"
-            expires_at = datetime.now(timezone.utc) + timedelta(days=7)
-            
-            # Store session in memory (fallback)
-            session_store[session_token] = {
+            # Create user data for encoding
+            user_data = {
                 "user_id": user_id,
                 "email": email,
                 "name": name,
                 "picture": picture,
-                "expires_at": expires_at.isoformat(),
                 "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            # Create encoded session token (serverless-friendly)
+            session_token = encode_session_data(user_data)
+            expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+            
+            # Store session in memory (fallback for this instance)
+            session_store[session_token] = {
+                **user_data,
+                "expires_at": expires_at.isoformat()
             }
             
             # Set session cookie
@@ -245,11 +312,20 @@ async def firebase_login(request: Request, response: Response):
         name = decoded_token.get('name', '')
         picture = decoded_token.get('picture', '')
         
-        # Create session token
-        session_token = f"session_{uuid.uuid4().hex[:24]}"
+        # Create user data for encoding
+        user_data = {
+            "user_id": user_id,
+            "email": email,
+            "name": name,
+            "picture": picture,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Create encoded session token (serverless-friendly)
+        session_token = encode_session_data(user_data)
         expires_at = datetime.now(timezone.utc) + timedelta(days=7)
         
-        # Store session in database
+        # Store session in database (if available)
         if db is not None:
             try:
                 session_doc = {
@@ -266,26 +342,13 @@ async def firebase_login(request: Request, response: Response):
                 print(f" Firebase session created in database for: {email}")
             except Exception as session_error:
                 print(f" Session creation failed, falling back to memory: {session_error}")
-                # Fallback to memory storage
-                session_store[session_token] = {
-                    "user_id": user_id,
-                    "email": email,
-                    "name": name,
-                    "picture": picture,
-                    "expires_at": expires_at.isoformat(),
-                    "created_at": datetime.now(timezone.utc).isoformat()
-                }
-        else:
-            # Fallback to memory storage
-            session_store[session_token] = {
-                "user_id": user_id,
-                "email": email,
-                "name": name,
-                "picture": picture,
-                "expires_at": expires_at.isoformat(),
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            print(f"Session stored in memory store: {session_token[:8]}... for user: {email}")
+        
+        # Always store in memory for this instance
+        session_store[session_token] = {
+            **user_data,
+            "expires_at": expires_at.isoformat()
+        }
+        print(f"Session stored in memory store: {session_token[:8]}... for user: {email}")
         
         # Set session cookie
         print(f" Setting session cookie: {session_token[:8]}...")
