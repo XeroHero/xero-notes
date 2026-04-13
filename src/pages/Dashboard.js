@@ -24,6 +24,10 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
+  // Debouncing to prevent rapid API calls
+  const [isLoadingFolders, setIsLoadingFolders] = useState(false);
+  const [isLoadingNotes, setIsLoadingNotes] = useState(false);
+
   // Set user from location state if available
   useEffect(() => {
     if (location.state?.user && !user) {
@@ -76,38 +80,57 @@ const Dashboard = () => {
 
     // Load folders from API
     const loadFolders = async () => {
+      if (isLoadingFolders) return; // Prevent concurrent calls
+      
+      setIsLoadingFolders(true);
       try {
         const response = await fetchWithRetry("/api/folders");
         const data = await response.json();
+        console.log("Folders API response:", data);
         setFolders(data.folders || []);
+        console.log("Folders set to:", data.folders || []);
       } catch (error) {
         console.error("Folders loading error:", error);
-        setFolders([]);
+        // Don't reset state on error, only log it
+        // setFolders([]);
+      } finally {
+        setIsLoadingFolders(false);
       }
     };
 
     // Load notes from API
     const loadNotes = async () => {
+      if (isLoadingNotes) return; // Prevent concurrent calls
+      
+      setIsLoadingNotes(true);
       try {
         const response = await fetchWithRetry("/api/notes");
         const data = await response.json();
+        console.log("Notes API response:", data);
         setNotes(data.notes || []);
+        console.log("Notes set to:", data.notes || []);
       } catch (error) {
         console.error("Notes loading error:", error);
-        setNotes([]);
+        // Don't reset state on error, only log it
+        // setNotes([]);
       } finally {
-        setIsLoading(false);
+        setIsLoadingNotes(false);
       }
     };
 
     loadFolders();
     loadNotes();
 
-    // Polling to refresh data every 30 seconds
+    // Ensure loading state is set to false after initial load
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+
+    // Polling to refresh data every 60 seconds
     const intervalId = setInterval(() => {
       loadFolders();
       loadNotes();
-    }, 30000);
+    }, 60000);
 
     return () => clearInterval(intervalId);
   }, [userId]);
@@ -124,9 +147,18 @@ const Dashboard = () => {
   // Create new note
   const handleCreateNote = async () => {
     try {
+      console.log("Creating note with folder:", selectedFolder);
+      
+      // Get session token from localStorage as fallback
+      const sessionToken = localStorage.getItem('session_token');
+      const headers = { "Content-Type": "application/json" };
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+
       const response = await fetch("/api/notes", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         credentials: "include",
         body: JSON.stringify({
           title: "Untitled Note",
@@ -135,6 +167,7 @@ const Dashboard = () => {
           is_shared: false
         })
       });
+      console.log("Note creation response status:", response.status);
 
       if (!response.ok) throw new Error("Failed to create note");
 
@@ -153,9 +186,16 @@ const Dashboard = () => {
   // Update note
   const handleUpdateNote = async (noteId, data) => {
     try {
+      // Get session token from localStorage as fallback
+      const sessionToken = localStorage.getItem('session_token');
+      const headers = { "Content-Type": "application/json" };
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+
       const response = await fetch(`/api/notes/${noteId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
         credentials: "include",
         body: JSON.stringify(data)
       });
@@ -173,8 +213,16 @@ const Dashboard = () => {
   // Delete note
   const handleDeleteNote = async (noteId) => {
     try {
+      // Get session token from localStorage as fallback
+      const sessionToken = localStorage.getItem('session_token');
+      const headers = {};
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+
       const response = await fetch(`/api/notes/${noteId}`, {
         method: "DELETE",
+        headers,
         credentials: "include"
       });
 
@@ -196,8 +244,16 @@ const Dashboard = () => {
   // Share note
   const handleShareNote = async (noteId) => {
     try {
+      // Get session token from localStorage as fallback
+      const sessionToken = localStorage.getItem('session_token');
+      const headers = {};
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+
       const response = await fetch(`/api/notes/${noteId}/share`, {
         method: "POST",
+        headers,
         credentials: "include"
       });
 
@@ -217,9 +273,16 @@ const Dashboard = () => {
   // Create folder
   const handleCreateFolder = async (name, color) => {
     try {
+      // Get session token from localStorage as fallback
+      const sessionToken = localStorage.getItem('session_token');
+      const headers = { "Content-Type": "application/json" };
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+
       const response = await fetch("/api/folders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         credentials: "include",
         body: JSON.stringify({ name, color })
       });
